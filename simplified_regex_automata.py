@@ -599,7 +599,7 @@ def display_regex_conversion(regex, input_string=None):
             anim = create_dfa_animation(dfa, input_string, states_visited)
             
             # Display animation
-            html_anim = HTML(anim.to_jshtml()).data
+            html_anim = anim.to_jshtml()
             
             # Show the animation
             st.components.v1.html(html_anim, height=500)
