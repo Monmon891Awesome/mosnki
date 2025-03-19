@@ -1,0 +1,332 @@
+/* Modern design system with consistent color palette */
+:root {
+    --primary: #4361ee;
+    --primary-hover: #3a56d4;
+    --secondary: #4cc9f0;
+    --success: #06d6a0;
+    --warning: #ffd166;
+    --danger: #ef476f;
+    --light: #f8f9fa;
+    --dark: #212529;
+    --gray: #6c757d;
+    --background: #f7f7fc;
+    --card: #ffffff;
+    --transition: all 0.3s ease;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --border-radius: 8px;
+    --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Base styles and resets */
+div.stApp {
+    background-color: var(--background);
+    font-family: var(--font-main);
+}
+
+/* Header styling */
+.main-header {
+    color: var(--dark);
+    text-align: center;
+    font-size: 2.5rem !important;
+    font-weight: 700 !important;
+    margin: 1.5rem 0 !important;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding: 1rem 0;
+}
+
+.sub-header {
+    color: var(--dark);
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+    margin: 1.5rem 0 1rem 0 !important;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary);
+    display: inline-block;
+}
+
+/* Card styling for containers */
+.stCard {
+    background-color: var(--card);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+    transition: var(--transition);
+}
+
+.stCard:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+}
+
+/* Button styling */
+.stButton > button {
+    background-color: var(--primary) !important;
+    color: white !important;
+    border-radius: var(--border-radius) !important;
+    padding: 0.5rem 1.5rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    box-shadow: var(--shadow) !important;
+    border: none !important;
+    transition: var(--transition) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stButton > button:hover {
+    background-color: var(--primary-hover) !important;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg) !important;
+}
+
+/* Select box styling */
+div[data-baseweb="select"] {
+    border-radius: var(--border-radius) !important;
+    transition: var(--transition);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+div[data-baseweb="select"]:hover {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+/* Input field styling */
+[data-testid="stTextInput"] > div > div > input {
+    border-radius: var(--border-radius) !important;
+    border: 1px solid #e0e0e0 !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.95rem !important;
+    box-shadow: none !important;
+    transition: var(--transition);
+}
+
+[data-testid="stTextInput"] > div > div > input:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2) !important;
+}
+
+/* Message styling */
+.success-message {
+    background-color: var(--success) !important;
+    color: white !important;
+    padding: 1rem !important;
+    border-radius: var(--border-radius) !important;
+    text-align: center !important;
+    font-weight: 600 !important;
+    margin: 1rem 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.success-message::before {
+    content: "✓";
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.error-message {
+    background-color: var(--danger) !important;
+    color: white !important;
+    padding: 1rem !important;
+    border-radius: var(--border-radius) !important;
+    text-align: center !important;
+    font-weight: 600 !important;
+    margin: 1rem 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.error-message::before {
+    content: "✗";
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* Expander styling */
+.streamlit-expanderHeader {
+    font-weight: 600 !important;
+    color: var(--dark) !important;
+    background-color: rgba(67, 97, 238, 0.05) !important;
+    border-radius: var(--border-radius) !important;
+    padding: 0.75rem 1rem !important;
+}
+
+.streamlit-expanderHeader:hover {
+    background-color: rgba(67, 97, 238, 0.1) !important;
+}
+
+.streamlit-expanderContent {
+    border: 1px solid rgba(67, 97, 238, 0.2) !important;
+    border-top: none !important;
+    border-radius: 0 0 var(--border-radius) var(--border-radius) !important;
+    padding: 1.5rem !important;
+}
+
+/* Example button styling */
+.example-button {
+    background-color: var(--light) !important;
+    color: var(--dark) !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: var(--border-radius) !important;
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.8rem !important;
+    margin-right: 0.5rem !important;
+    transition: var(--transition) !important;
+}
+
+.example-button:hover {
+    background-color: rgba(67, 97, 238, 0.1) !important;
+    border-color: var(--primary) !important;
+}
+
+/* Animation container styling */
+.animation-container {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    margin: 1.5rem 0;
+    background-color: white;
+}
+
+/* State visualization styling */
+.state-node {
+    stroke-width: 2;
+    transition: all 0.3s ease;
+}
+
+.state-node-active {
+    stroke: var(--primary);
+    stroke-width: 3;
+    fill: rgba(67, 97, 238, 0.2);
+}
+
+.state-node-final {
+    stroke: var(--success);
+}
+
+.state-edge {
+    stroke-width: 1.5;
+    transition: all 0.3s ease;
+}
+
+.state-edge-active {
+    stroke: var(--primary);
+    stroke-width: 3;
+}
+
+.state-label {
+    font-family: var(--font-main);
+    font-weight: 600;
+}
+
+/* Footer styling */
+.footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+    text-align: center;
+    color: var(--gray);
+    font-size: 0.9rem;
+}
+
+.footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+/* Loading spinner */
+.stSpinner > div {
+    border-top-color: var(--primary) !important;
+}
+
+/* Cards for examples */
+.example-card {
+    background-color: white;
+    border-radius: var(--border-radius);
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid #e0e0e0;
+}
+
+.example-card:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+    border-color: var(--primary);
+}
+
+/* Tooltip styling */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: var(--dark);
+    color: white;
+    text-align: center;
+    border-radius: 6px;
+    padding: 0.5rem;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.8rem;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Info icon */
+.info-icon {
+    color: var(--gray);
+    font-size: 1rem;
+    cursor: pointer;
+    margin-left: 0.5rem;
+}
+
+.info-icon:hover {
+    color: var(--primary);
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #1e1e2e;
+        --card: #2a2a3c;
+        --dark: #e0e0e0;
+        --light: #2a2a3c;
+        --gray: #a0a0a0;
+    }
+    
+    .streamlit-expanderContent {
+        background-color: #2a2a3c !important;
+    }
+    
+    .example-card {
+        background-color: #2a2a3c;
+        border-color: #3a3a4c;
+    }
+    
+    .example-card:hover {
+        background-color: #3a3a4c;
+    }
+}

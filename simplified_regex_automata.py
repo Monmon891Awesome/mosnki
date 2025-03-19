@@ -5,67 +5,76 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.patches import FancyArrowPatch
 import pandas as pd
-from IPython.display import HTML
+import base64
+from io import BytesIO
+import numpy as np
+import time
+from PIL import Image
 
-# Set page configuration
+
+# ======== CONFIGURATION AND PAGE SETUP ========
 st.set_page_config(
-    page_title="Simplified Regex to Automata Converter",
+    page_title="Regex to Automata Converter",
+    page_icon="🔄",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS
-st.markdown("""
-<style>
-    .stButton button {
-        background-color: #4CAF50;
-        color: white;
-        border-radius: 5px;
-        padding: 10px 20px;
-        font-size: 16px;
-        border: none;
+# ======== CACHE DECORATORS FOR PERFORMANCE ========
+@st.cache_data(ttl=3600)
+def get_css():
+    """Load CSS from a file or string"""
+    return """
+    /* Modern design system with consistent color palette */
+    :root {
+        --primary: #4361ee;
+        --primary-hover: #3a56d4;
+        --secondary: #4cc9f0;
+        --success: #06d6a0;
+        --warning: #ffd166;
+        --danger: #ef476f;
+        --light: #f8f9fa;
+        --dark: #212529;
+        --gray: #6c757d;
+        --background: #f7f7fc;
+        --card: #ffffff;
+        --transition: all 0.3s ease;
+        --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+        --border-radius: 8px;
+        --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    .stButton button:hover {
-        background-color: #45a049;
-    }
-    .success-message {
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        text-align: center;
-    }
-    .error-message {
-        background-color: #f44336;
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        text-align: center;
-    }
-    .main-header {
-        text-align: center;
-        font-size: 36px;
-        font-weight: bold;
-        margin-bottom: 30px;
-    }
-    .sub-header {
-        font-size: 24px;
-        font-weight: bold;
-        margin-top: 20px;
-        margin-bottom: 10px;
-    }
-</style>
-""", unsafe_allow_html=True)
+    
+    /* Additional CSS content from the CSS artifact */
+    """
 
-st.markdown('<h1 class="main-header">Simplified Regex to DFA, CFG & PDA Converter</h1>', unsafe_allow_html=True)
+@st.cache_data(ttl=3600)
+def get_regex_options():
+    """Return predefined regex options with descriptions"""
+    return {
+        "(a+b)*": "Any sequence of a's and b's (includes empty string)",
+        "a*b*": "Any sequence of a's followed by any sequence of b's (includes empty string)",
+        "(a+b)*abb(a+b)*": "Any string containing 'abb' as a substring",
+        "a*ba*ba*": "Strings with exactly two b's",
+        "(aa+bb)*((ab+ba)(aa+bb)*(ab+ba)(aa+bb)*)*": "Strings with an even number of a's and b's",
+        "a+b": "Either a single 'a' or a single 'b'",
+        "a(ba)*": "Strings like 'a', 'aba', 'ababa', etc."
+    }
 
-# Define regular expressions for better performance
-regex_options = {
-    "(a+b)*": "Any sequence of a's and b's (includes empty string)",
-    "a*b*": "Any sequence of a's followed by any sequence of b's (includes empty string)"
-}
+@st.cache_data(ttl=600)
+def get_examples():
+    """Return example strings for each regex"""
+    return {
+        "(a+b)*": ["ab", "aabb", "baba", ""],
+        "a*b*": ["aaabbb", "aaa", "bbb", ""],
+        "(a+b)*abb(a+b)*": ["abb", "aabba", "bbabb", "abbb"],
+        "a*ba*ba*": ["bb", "abb", "bab", "abba"],
+        "(aa+bb)*((ab+ba)(aa+bb)*(ab+ba)(aa+bb)*)*": ["aabb", "abba", "aaabbb", "aababb"],
+        "a+b": ["a", "b"],
+        "a(ba)*": ["a", "aba", "ababa", "abababa"]
+    }
 
-# Thompson's algorithm for NFA construction - with ID-based states
+# ======== NFA CONSTRUCTION CLASSES ========
 class NFAState:
     _next_id = 0  # Class variable for generating unique IDs
     
@@ -103,25 +112,23 @@ class NFA:
     def reset_state_ids():
         NFAState._next_id = 0
 
-# Epsilon closure function - identifies all states reachable via epsilon transitions
-def epsilon_closure(state, visited=None):
-    if visited is None:
-        visited = set()
+# ======== ALGORITHM FUNCTIONS ========
+@st.cache_data(ttl=600)
+def epsilon_closure(state_id, epsilon_transitions_map):
+    """Optimized epsilon closure function using state IDs"""
+    result = {state_id}
+    stack = [state_id]
     
-    if state in visited:
-        return visited
+    while stack:
+        current = stack.pop()
+        for next_state in epsilon_transitions_map.get(current, []):
+            if next_state not in result:
+                result.add(next_state)
+                stack.append(next_state)
     
-    visited.add(state)
-    for eps_state in state.epsilon_transitions:
-        epsilon_closure(eps_state, visited)
-    
-    return visited
+    return frozenset(result)
 
-# Get a set of state IDs for better serialization
-def get_state_id_set(states):
-    return frozenset(state.state_id for state in states)
-
-# Convert regex to NFA
+@st.cache_data(ttl=600)
 def regex_to_nfa(regex):
     """Convert a regular expression to an NFA using Thompson's construction algorithm."""
     
@@ -226,7 +233,7 @@ def regex_to_nfa(regex):
         
         return current_nfa, i
     
-    # Remove whitespace and simplify regex
+    # Normalize regex
     regex = regex.replace(" ", "")
     
     # Handle simple cases
@@ -245,75 +252,89 @@ def regex_to_nfa(regex):
     nfa, _ = parse_regex(regex)
     return nfa
 
-# Convert NFA to DFA using subset construction
+@st.cache_data(ttl=600)
 def nfa_to_dfa(nfa):
-    """Convert an NFA to a DFA using the subset construction algorithm."""
+    """Optimized NFA to DFA conversion using subset construction algorithm."""
     
+    # Create efficient maps for transitions
+    symbol_map = {}
+    epsilon_map = {}
+    state_map = {}
     alphabet = set()
-    state_map = {}  # Map state IDs to NFAState objects
     
-    # Collect all symbols and build state map
+    # Collect states and transitions
     queue = [nfa.start_state]
     visited = set()
     
     while queue:
         state = queue.pop(0)
-        if state in visited:
-            continue
-            
-        visited.add(state)
-        state_map[state.state_id] = state
+        state_id = state.state_id
         
-        for symbol in state.transitions:
+        if state_id in visited:
+            continue
+        
+        visited.add(state_id)
+        state_map[state_id] = state
+        
+        # Regular transitions
+        for symbol, next_states in state.transitions.items():
             alphabet.add(symbol)
-            for next_state in state.transitions[symbol]:
-                if next_state not in visited:
+            
+            if state_id not in symbol_map:
+                symbol_map[state_id] = {}
+            
+            if symbol not in symbol_map[state_id]:
+                symbol_map[state_id][symbol] = []
+            
+            for next_state in next_states:
+                symbol_map[state_id][symbol].append(next_state.state_id)
+                if next_state.state_id not in visited:
                     queue.append(next_state)
         
-        for eps_state in state.epsilon_transitions:
-            if eps_state not in visited:
-                queue.append(eps_state)
+        # Epsilon transitions
+        if state.epsilon_transitions:
+            epsilon_map[state_id] = [s.state_id for s in state.epsilon_transitions]
+            for eps_state in state.epsilon_transitions:
+                if eps_state.state_id not in visited:
+                    queue.append(eps_state)
     
     # Start with epsilon closure of the start state
-    start_states = epsilon_closure(nfa.start_state)
-    start_ids = get_state_id_set(start_states)
+    start_closure = epsilon_closure(nfa.start_state.state_id, epsilon_map)
     
     # Map NFA state ID sets to DFA states
-    dfa_states = {start_ids: 0}  # Start state is 0
+    dfa_states = {start_closure: 0}  # Start state is 0
     dfa_transitions = {}
     dfa_final_states = set()
     
     # Check if the start state is also a final state
-    if any(state.is_final for state in start_states):
+    if any(state_map[state_id].is_final for state_id in start_closure):
         dfa_final_states.add(0)
     
-    # Process queue with state IDs for better hashing
-    queue = [start_ids]
+    # Process queue with state IDs for better performance
+    queue = [start_closure]
     while queue:
         current_state_ids = queue.pop(0)
         current_dfa_state = dfa_states[current_state_ids]
         
-        # Convert IDs back to NFAState objects for processing
-        current_states = {state_map[state_id] for state_id in current_state_ids}
-        
+        # Process each symbol in the alphabet
         for symbol in alphabet:
             next_states = set()
             
             # Get all states reachable by this symbol
-            for state in current_states:
-                if symbol in state.transitions:
-                    next_states.update(state.transitions[symbol])
+            for state_id in current_state_ids:
+                if state_id in symbol_map and symbol in symbol_map[state_id]:
+                    next_states.update(symbol_map[state_id][symbol])
             
-            # Add epsilon closures
+            # Apply epsilon closures to all next states
             epsilon_states = set()
-            for state in next_states:
-                epsilon_states.update(epsilon_closure(state))
+            for state_id in next_states:
+                epsilon_states.update(epsilon_closure(state_id, epsilon_map))
             
             if not epsilon_states:
                 continue
-                
-            # Convert to IDs for hashing
-            next_state_ids = get_state_id_set(epsilon_states)
+            
+            # Convert to frozenset for hashing
+            next_state_ids = frozenset(epsilon_states)
             
             # Add new DFA state if needed
             if next_state_ids not in dfa_states:
@@ -327,7 +348,7 @@ def nfa_to_dfa(nfa):
             # Add transition to DFA
             dfa_transitions[(current_dfa_state, symbol)] = dfa_states[next_state_ids]
     
-    # Create the formal DFA structure (simple dictionary format for easy serialization)
+    # Create the formal DFA structure
     dfa = {
         'states': set(range(len(dfa_states))),
         'alphabet': alphabet,
@@ -338,7 +359,7 @@ def nfa_to_dfa(nfa):
     
     return dfa
 
-# Convert DFA to CFG
+@st.cache_data(ttl=600)
 def dfa_to_cfg(dfa):
     """Convert a DFA to a Context-Free Grammar"""
     cfg = {}
@@ -370,7 +391,7 @@ def dfa_to_cfg(dfa):
         'productions': cfg
     }
 
-# Convert DFA to PDA
+@st.cache_data(ttl=600)
 def dfa_to_pda(dfa):
     """Convert a DFA to a Pushdown Automaton"""
     pda = {
@@ -400,7 +421,7 @@ def dfa_to_pda(dfa):
     
     return pda
 
-# Simulate a DFA on an input string
+@st.cache_data(ttl=600)
 def simulate_dfa(dfa, input_string):
     """Simulate a DFA on an input string and return the states visited."""
     current_state = dfa['start_state']
@@ -415,9 +436,34 @@ def simulate_dfa(dfa, input_string):
     
     return states_visited, current_state in dfa['final_states']
 
-# Visualize a DFA without caching
-def visualize_dfa(dfa):
+@st.cache_data(ttl=600)
+def get_dfa_from_regex(regex):
+    """Create a DFA from a regex, avoiding caching issues."""
+    # Reset NFA state IDs to ensure consistent generation
+    NFA.reset_state_ids()
+    
+    # Convert regex to NFA
+    nfa = regex_to_nfa(regex)
+    
+    # Convert NFA to DFA
+    dfa = nfa_to_dfa(nfa)
+    
+    return dfa
+
+@st.cache_data(ttl=600)
+def get_all_automata_from_regex(regex):
+    """Create DFA, CFG, and PDA from a regex."""
+    dfa = get_dfa_from_regex(regex)
+    cfg = dfa_to_cfg(dfa)
+    pda = dfa_to_pda(dfa)
+    
+    return dfa, cfg, pda
+
+# ======== VISUALIZATION FUNCTIONS ========
+@st.cache_data(ttl=600)
+def visualize_dfa(dfa, highlight_states=None, highlight_transitions=None, title=None):
     """Visualize a DFA using networkx and matplotlib."""
+    # Create a directed graph
     G = nx.DiGraph()
     
     # Add all states as nodes
@@ -433,330 +479,463 @@ def visualize_dfa(dfa):
         else:
             G.add_edge(state, next_state, label=symbol)
     
-    # Create a figure
-    plt.figure(figsize=(10, 6))
+    # Set up figure
+    plt.figure(figsize=(10, 7))
     
-    # Position the nodes
-    pos = nx.spring_layout(G, seed=42)
+    # Use a deterministic layout algorithm
+    pos = nx.spring_layout(G, k=0.5, iterations=50, seed=42)
     
-    # Draw nodes
-    node_colors = ['lightblue' if G.nodes[node]['is_final'] else 'white' for node in G.nodes]
-    nx.draw_networkx_nodes(G, pos, node_size=700, node_color=node_colors, edgecolors='black')
+    # Determine node colors based on state types and highlights
+    highlight_states = highlight_states or []
+    highlight_transitions = highlight_transitions or []
     
-    # Double circle for final states
+    node_colors = []
+    for node in G.nodes():
+        if node in highlight_states:
+            node_colors.append('#4361ee')  # Primary color for highlighted states
+        elif G.nodes[node]['is_final']:
+            node_colors.append('#06d6a0')  # Success color for final states
+        else:
+            node_colors.append('#ffffff')  # White for normal states
+    
+    # Draw nodes with custom styling
+    nx.draw_networkx_nodes(G, pos, node_size=800, node_color=node_colors, 
+                          edgecolors='black', linewidths=2, alpha=0.9)
+    
+    # Draw double circle for final states
     final_states = [state for state in dfa['states'] if state in dfa['final_states']]
-    nx.draw_networkx_nodes(G, pos, nodelist=final_states, node_size=600, node_color='none', edgecolors='black')
+    nx.draw_networkx_nodes(G, pos, nodelist=final_states, node_size=700, 
+                          node_color='none', edgecolors='black', linewidths=2)
     
-    # Special marker for start state
+    # Determine edge colors
+    edge_colors = []
+    edge_widths = []
+    
+    for u, v in G.edges():
+        if (u, v) in highlight_transitions:
+            edge_colors.append('#ef476f')  # Highlighted edge
+            edge_widths.append(3)
+        else:
+            edge_colors.append('#212529')  # Default edge color
+            edge_widths.append(1.5)
+    
+    # Draw edges with styled arrows
+    nx.draw_networkx_edges(G, pos, width=edge_widths, edge_color=edge_colors,
+                          arrowstyle='->', arrowsize=20, connectionstyle="arc3,rad=0.1")
+    
+    # Add special marker for start state
     start_state = dfa['start_state']
-    plt.annotate('', xy=pos[start_state], xytext=(pos[start_state][0]-0.1, pos[start_state][1]), 
-                 arrowprops=dict(arrowstyle="->", color='black'))
-    
-    # Draw edges
-    nx.draw_networkx_edges(G, pos, width=1.5, arrowsize=20)
+    plt.annotate('', xy=pos[start_state], xytext=(pos[start_state][0]-0.15, pos[start_state][1]), 
+                arrowprops=dict(arrowstyle="->", color='black', lw=2))
     
     # Add edge labels
     edge_labels = {(u, v): G[u][v]['label'] for u, v in G.edges()}
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=12)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=12, 
+                                font_family='sans-serif', font_weight='bold')
     
-    # Add node labels (state numbers)
+    # Add node labels
     node_labels = {node: f"q{node}" for node in G.nodes()}
-    nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=12)
+    nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=14, 
+                           font_family='sans-serif', font_weight='bold')
     
     plt.axis('off')
     
+    # Add title if provided
+    if title:
+        plt.title(title, fontsize=16, fontweight='bold', pad=20, fontfamily='sans-serif')
+    
+    # Adjust margins
+    plt.tight_layout()
+    
     return plt
 
-# Create static frames for visualization instead of animation
-def create_dfa_frames(dfa, input_string, states_visited):
-    """Create a series of static frames of the DFA process instead of animation."""
+def create_dfa_animation_frames(dfa, input_string, max_frames=20):
+    """Create static frames for a DFA simulation animation."""
+    states_visited, is_accepted = simulate_dfa(dfa, input_string)
+    
+    # Create a series of frames showing the DFA processing
     frames = []
-    G = nx.DiGraph()
     
-    # Add all states as nodes
-    for state in dfa['states']:
-        G.add_node(state, is_final=state in dfa['final_states'], is_start=state == dfa['start_state'])
+    # Add initial state frame
+    highlight_states = [states_visited[0]]
+    highlight_transitions = []
+    title = "Initial State"
+    fig = visualize_dfa(dfa, highlight_states, highlight_transitions, title)
+    frames.append(fig)
     
-    # Add transitions as edges
-    for (state, symbol), next_state in dfa['transitions'].items():
-        # Check if an edge already exists
-        if G.has_edge(state, next_state):
-            # Update the label
-            G[state][next_state]['label'] += f", {symbol}"
-            G[state][next_state]['symbols'] = G[state][next_state].get('symbols', []) + [symbol]
+    # Add frames for each transition
+    for i in range(1, min(len(states_visited), max_frames)):
+        highlight_states = [states_visited[i]]
+        highlight_transitions = [(states_visited[i-1], states_visited[i])]
+        
+        if i < len(input_string):
+            title = f"Processing: '{input_string[i-1]}'"
         else:
-            G.add_edge(state, next_state, label=symbol, symbols=[symbol])
-    
-    # Position the nodes
-    pos = nx.spring_layout(G, seed=42)
-    
-    # Generate each frame
-    for i in range(len(states_visited) + 1):
-        fig, ax = plt.subplots(figsize=(10, 6))
+            title = "Final State"
         
-        # Determine highlight states and transitions
-        highlight_states = [states_visited[min(i, len(states_visited)-1)]]
-        
-        highlight_transitions = []
-        if i > 0 and i < len(states_visited):
-            highlight_transitions = [(states_visited[i-1], states_visited[i])]
-        
-        # Draw nodes
-        node_colors = ['lightgreen' if node in highlight_states else 
-                       ('lightblue' if G.nodes[node]['is_final'] else 'white') 
-                       for node in G.nodes]
-        nx.draw_networkx_nodes(G, pos, node_size=700, node_color=node_colors, edgecolors='black', ax=ax)
-        
-        # Double circle for final states
-        final_states = [state for state in dfa['states'] if state in dfa['final_states']]
-        nx.draw_networkx_nodes(G, pos, nodelist=final_states, node_size=600, 
-                              node_color='none', edgecolors='black', ax=ax)
-        
-        # Special marker for start state
-        start_state = dfa['start_state']
-        ax.annotate('', xy=pos[start_state], 
-                   xytext=(pos[start_state][0]-0.1, pos[start_state][1]), 
-                   arrowprops=dict(arrowstyle="->", color='black'))
-        
-        # Draw edges
-        edges = G.edges()
-        edge_colors = []
-        
-        for u, v in edges:
-            if (u, v) in highlight_transitions:
-                edge_colors.append('red')
-            else:
-                edge_colors.append('black')
-        
-        nx.draw_networkx_edges(G, pos, edgelist=edges, width=1.5, 
-                              arrowsize=20, edge_color=edge_colors, ax=ax)
-        
-        # Add edge labels
-        edge_labels = {(u, v): G[u][v]['label'] for u, v in G.edges()}
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=12, ax=ax)
-        
-        # Add node labels (state numbers)
-        node_labels = {node: f"q{node}" for node in G.nodes()}
-        nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=12, ax=ax)
-        
-        # Display the current character being processed
-        if i > 0 and i < len(input_string) + 1:
-            char = input_string[i-1]
-            current_state = states_visited[min(i-1, len(states_visited)-1)]
-            next_state = states_visited[min(i, len(states_visited)-1)]
-            
-            # If there's a transition, show the symbol on the edge
-            if current_state != next_state:
-                ax.set_title(f"Processing: '{char}' | Transition: q{current_state} --{char}--> q{next_state}", 
-                            fontsize=16)
-            else:
-                ax.set_title(f"Processing: '{char}' | No valid transition from q{current_state}", 
-                            fontsize=16)
-        elif i == 0:
-            ax.set_title(f"Start: at state q{states_visited[0]}", fontsize=16)
-        else:
-            result = "Accepted" if states_visited[-1] in dfa['final_states'] else "Rejected"
-            ax.set_title(f"Finished: String {result}", fontsize=16)
-        
-        ax.axis('off')
+        fig = visualize_dfa(dfa, highlight_states, highlight_transitions, title)
         frames.append(fig)
     
-    return frames
-
-# Create DFA from regex without caching
-def get_dfa_from_regex(regex):
-    """Create a DFA from a regex, avoiding caching issues."""
-    # Reset NFA state IDs to ensure consistent generation
-    NFA.reset_state_ids()
+    # Add final state frame if not already included
+    if len(states_visited) > max_frames:
+        highlight_states = [states_visited[-1]]
+        highlight_transitions = []
+        result = "Accepted" if is_accepted else "Rejected"
+        title = f"Final State - String {result}"
+        fig = visualize_dfa(dfa, highlight_states, highlight_transitions, title)
+        frames.append(fig)
     
-    # Convert regex to NFA
-    nfa = regex_to_nfa(regex)
+    return frames, is_accepted
+
+def fig_to_base64(fig):
+    """Convert a matplotlib figure to base64 encoded string."""
+    buf = BytesIO()
+    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+    buf.seek(0)
+    img_str = base64.b64encode(buf.read()).decode()
+    plt.close(fig)
+    return img_str
+
+# ======== UI COMPONENTS ========
+def render_header():
+    """Render the app header with logo and title."""
+    st.markdown(
+        '<div class="header-container">'
+        '<h1 class="main-header">✨ Regex to Automata Converter</h1>'
+        '<p class="header-subtitle">Transform regular expressions into DFA, CFG, and PDA</p>'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+def render_regex_selector():
+    """Render the regex selection interface with custom regex input option."""
+    st.markdown('<h2 class="sub-header">Select or Create a Regular Expression</h2>', unsafe_allow_html=True)
     
-    # Convert NFA to DFA
-    dfa = nfa_to_dfa(nfa)
+    # Create card effect with columns
+    col1, col2 = st.columns([2, 3])
     
-    return dfa
-
-# Display the regex conversion with step-by-step frames instead of animation
-def display_regex_conversion(regex, input_string=None):
-    """Display the converted regex as DFA, CFG, and PDA."""
-    st.markdown(f'<h2 class="sub-header">Deterministic Finite Automaton for: {regex}</h2>', unsafe_allow_html=True)
+    with col1:
+        # Option to use predefined regex or custom one
+        regex_type = st.radio(
+            "Choose regex source:",
+            options=["Predefined Examples", "Custom Regex"],
+            horizontal=True
+        )
     
-    with st.spinner("Converting regex to automata..."):
-        # Get a fresh DFA each time
-        dfa = get_dfa_from_regex(regex)
-        cfg = dfa_to_cfg(dfa)
-        pda = dfa_to_pda(dfa)
-        
-        # Create two containers for better layout
-        static_container = st.container()
-        animation_container = st.container()
-        
-        with static_container:
-            st.markdown("### Static DFA Visualization")
-            fig = visualize_dfa(dfa)
-            st.pyplot(fig)
-        
-        # Visualize with input string if provided
-        if input_string:
-            states_visited, is_valid = simulate_dfa(dfa, input_string)
-            st.write(f"Entered String: {input_string}")
-            
-            with animation_container:
-                st.markdown("### Animated DFA Processing")
-                
-                # Create animation using FuncAnimation
-                G = nx.DiGraph()
-                fig, ax = plt.subplots(figsize=(12, 8))
-                
-                # Set up the graph first
-                for state in dfa['states']:
-                    G.add_node(state)
-                
-                for (state, symbol), next_state in dfa['transitions'].items():
-                    if G.has_edge(state, next_state):
-                        G[state][next_state]['label'] += f", {symbol}"
-                    else:
-                        G.add_edge(state, next_state, label=symbol)
-                
-                pos = nx.spring_layout(G, seed=42)
-                
-                def update(frame):
-                    ax.clear()
-                    current_state = states_visited[min(frame, len(states_visited)-1)]
-                    
-                    # Draw nodes with current state highlighted
-                    node_colors = ['lightgreen' if node == current_state
-                                  else ('lightblue' if node in dfa['final_states']
-                                  else 'white') for node in G.nodes()]
-                    
-                    nx.draw_networkx_nodes(G, pos, node_size=700, 
-                                         node_color=node_colors, edgecolors='black')
-                    
-                    # Draw edges with current transition highlighted
-                    edge_colors = ['red' if frame > 0 and (u, v) == (states_visited[frame-1], states_visited[min(frame, len(states_visited)-1)])
-                                  else 'black' for u, v in G.edges()]
-                    
-                    nx.draw_networkx_edges(G, pos, edge_color=edge_colors,
-                                         width=1.5, arrowsize=20)
-                    
-                    # Add edge labels
-                    edge_labels = {(u, v): G[u][v]['label'] for u, v in G.edges()}
-                    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
-                    
-                    # Add node labels
-                    node_labels = {node: f"q{node}" for node in G.nodes()}
-                    nx.draw_networkx_labels(G, pos, labels=node_labels)
-                    
-                    # Add title based on current frame
-                    if frame == 0:
-                        plt.title("Initial State", pad=20)
-                    elif frame < len(input_string) + 1:
-                        plt.title(f"Processing: {input_string[frame-1]}", pad=20)
-                    else:
-                        result = "Accepted" if is_valid else "Rejected"
-                        plt.title(f"Final State - String {result}", pad=20)
-                    
-                    plt.axis('off')
-                
-                # Create animation
-                anim = animation.FuncAnimation(
-                    fig, update,
-                    frames=len(states_visited),
-                    interval=1000,  # 1 second between frames
-                    repeat=True
-                )
-                
-                # Add container for animation with fixed height
-                animation_div = st.container()
-                with animation_div:
-                    # Convert animation to HTML and display with adjusted height
-                    animation_html = anim.to_jshtml()
-                    st.components.v1.html(animation_html, height=500)
-                    
-                    # Add spacing before validation result
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    
-                    # Show validation result
-                    if is_valid:
-                        st.markdown(f'<div class="success-message">The string \'{input_string}\' is valid for the DFA.</div>', 
-                                  unsafe_allow_html=True)
-                    else:
-                        st.markdown(f'<div class="error-message">The string \'{input_string}\' is NOT valid for the DFA.</div>', 
-                                  unsafe_allow_html=True)
-        
-        # Show CFG and PDA in expanders below the animation
-        with st.expander("Context-Free Grammar (CFG) Representation"):
-            st.markdown("### Productions")
-            st.write(f"Start Symbol: {cfg['start_symbol']}")
-            for nt, productions in sorted(cfg['productions'].items()):
-                production_str = " | ".join(productions) if productions else "ε"
-                st.write(f"{nt} → {production_str}")
-        
-        with st.expander("Pushdown Automaton (PDA) Representation"):
-            st.markdown("### States")
-            st.write(f"States: {', '.join([f'q{s}' for s in sorted(pda['states'])])}")
-            st.write(f"Start State: q{pda['start_state']}")
-            st.write(f"Final States: {', '.join([f'q{s}' for s in sorted(pda['final_states'])])}")
-            
-            st.markdown("### Alphabets")
-            st.write(f"Input Alphabet: {', '.join(sorted(pda['input_alphabet']))}")
-            st.write(f"Stack Alphabet: {', '.join(sorted(list(pda['stack_alphabet'])[:5]))}...")
-
-# Initialize session state for input string
-if 'input_string' not in st.session_state:
-    st.session_state.input_string = None
-
-# Main app logic
-st.markdown('<h2 class="sub-header">Select a Regular Expression</h2>', unsafe_allow_html=True)
-selected_regex = st.selectbox("", list(regex_options.keys()), format_func=lambda x: regex_options[x])
-
-# Pre-computed examples for quick access
-examples = {
-    "(a+b)*": ["ab", "aabb", "baba", ""],
-    "a*b*": ["aaabbb", "aaa", "bbb", ""]
-}
-
-# Display the conversion for the selected regex
-display_regex_conversion(selected_regex)
-
-# Section for string validation
-st.markdown('<h2 class="sub-header">Enter a string to check its validity for displayed DFA</h2>', unsafe_allow_html=True)
-
-col1, col2 = st.columns([3, 1])
-
-with col1:
-    input_string = st.text_input("", placeholder="Enter a string (e.g., abababba)", key="input_string_field")
+    # Setup container for regex selection
+    regex_container = st.container()
     
-    # Show example strings for the selected regex
-    st.markdown("**Examples to try:**")
-    example_buttons = st.columns(len(examples[selected_regex]))
-    
-    for i, example in enumerate(examples[selected_regex]):
-        # Ensure each button has a unique key
-        display_text = example if example != "" else "empty string"
-        if example_buttons[i].button(display_text, key=f"example_{selected_regex}_{i}"):
-            st.session_state.input_string = example
-            st.rerun()  # Use rerun instead of experimental_rerun
-
-with col2:
-    if st.button("Validate", use_container_width=True, key="validate_button"):
-        if input_string:
-            # Display the conversion with frames for the input string
-            display_regex_conversion(selected_regex, input_string)
+    with regex_container:
+        if regex_type == "Predefined Examples":
+            # Use predefined regex options
+            selected_regex = st.selectbox(
+                "Select a regular expression:",
+                options=list(get_regex_options().keys()),
+                format_func=lambda x: f"{x} - {get_regex_options()[x]}"
+            )
         else:
-            st.error("Please enter a string to validate.")
+            # Input custom regex
+            selected_regex = st.text_input(
+                "Enter your custom regular expression:",
+                placeholder="Example: (a+b)*abb",
+                help="Use '+' for union, '*' for Kleene star, and parentheses for grouping"
+            )
+            
+            if not selected_regex:
+                st.info("Please enter a valid regular expression or choose a predefined one.")
+    
+    # Display regex explanation if a predefined one is selected
+    if regex_type == "Predefined Examples" and selected_regex:
+        st.markdown(
+            f'<div class="regex-explanation">'
+            f'<strong>Description:</strong> {get_regex_options()[selected_regex]}'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+    
+    return selected_regex
 
-# If there's an example input string set from button clicks
-if st.session_state.input_string:
-    display_regex_conversion(selected_regex, st.session_state.input_string)
-    # Clear the session state after use
-    st.session_state.input_string = None
+def render_string_input_section(regex):
+    """Render the section for string input and validation."""
+    st.markdown('<h2 class="sub-header">Test String Validation</h2>', unsafe_allow_html=True)
+    
+    # Create columns for input and examples
+    col1, col2 = st.columns([3, 2])
+    
+    with col1:
+        input_string = st.text_input(
+            "Enter a string to validate:",
+            placeholder="Example: abba",
+            help="The string will be checked against the automaton"
+        )
+        
+        validate_button = st.button("Validate String", type="primary", use_container_width=True)
+    
+    with col2:
+        st.markdown("**Quick Test Examples:**")
+        
+        # Get examples for the selected regex
+        examples = get_examples().get(regex, ["ab", ""])
+        
+        # Create a grid of example buttons
+        example_cols = st.columns(len(examples))
+        
+        # Track if any example was clicked
+        example_clicked = False
+        selected_example = None
+        
+        for i, example in enumerate(examples):
+            display_text = example if example != "" else "ε (empty string)"
+            if example_cols[i].button(display_text, key=f"example_{regex}_{i}"):
+                example_clicked = True
+                selected_example = example
+    
+    # Return input string (either from text input or example button)
+    if example_clicked and selected_example is not None:
+        return selected_example, True
+    else:
+        return input_string, validate_button
 
-# Footer
-st.markdown("---")
-st.markdown("""
-<div style="text-align: center; color: #666;">
-    <p>Simplified Regex to Automata Converter | Created with Streamlit</p>
-</div>
-""", unsafe_allow_html=True)
+def render_automaton_visualization(regex, input_string=None, validate=False):
+    """Render the automaton visualization with tabs for DFA, CFG, and PDA."""
+    if not regex:
+        st.warning("Please select or enter a regular expression.")
+        return
+    
+    # Show a loading spinner during computation
+    with st.spinner("Computing automata..."):
+        try:
+            # Get all automata from the regex
+            dfa, cfg, pda = get_all_automata_from_regex(regex)
+            
+            # Create tab layout for different representations
+            tab1, tab2, tab3 = st.tabs(["DFA Visualization", "Context-Free Grammar", "Pushdown Automaton"])
+            
+            with tab1:
+                st.markdown(f"### Deterministic Finite Automaton for: `{regex}`")
+                
+                # If we have an input string and should validate it
+                if input_string is not None and validate:
+                    # Simulate the DFA
+                    states_visited, is_accepted = simulate_dfa(dfa, input_string)
+                    
+                    # Create frames for animation
+                    frames, _ = create_dfa_animation_frames(dfa, input_string)
+                    
+                    # Convert frames to base64 for display
+                    frame_data = [fig_to_base64(fig) for fig in frames]
+                    
+                    # Create manual slideshow using columns
+                    st.markdown("#### Step-by-Step DFA Processing")
+                    
+                    # Display string and result
+                    if is_accepted:
+                        st.success(f"The string '{input_string if input_string else 'ε (empty string)'}' is ACCEPTED by the DFA.")
+                    else:
+                        st.error(f"The string '{input_string if input_string else 'ε (empty string)'}' is REJECTED by the DFA.")
+                    
+                    # Create a slider for frame navigation
+                    frame_index = st.slider("Processing Step", 0, len(frame_data) - 1, 0)
+                    
+                    # Display the current frame
+                    st.markdown(
+                        f'<div class="frame-container"><img src="data:image/png;base64,{frame_data[frame_index]}" width="100%"></div>',
+                        unsafe_allow_html=True
+                    )
+                    
+                    # Add controls for animation
+                    cols = st.columns([1, 1, 1])
+                    
+                    # Play button logic would go here in a real app
+                    # This is simplified for the example
+                    cols[1].markdown(
+                        '<div style="text-align:center">'
+                        '<span style="font-size:0.8rem">Use the slider to navigate through steps</span>'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    # Just show the static DFA
+                    fig = visualize_dfa(dfa)
+                    st.pyplot(fig)
+            
+            with tab2:
+                st.markdown(f"### Context-Free Grammar for: `{regex}`")
+                
+                # Display CFG details
+                st.markdown("#### Production Rules")
+                st.info(f"Start Symbol: {cfg['start_symbol']}")
+                
+                # Create a table for productions
+                productions_data = []
+                for nt, productions in sorted(cfg['productions'].items()):
+                    production_str = " | ".join(productions) if productions else "ε"
+                    productions_data.append([nt, production_str])
+                
+                # Display as DataFrame for nice formatting
+                df = pd.DataFrame(productions_data, columns=["Non-terminal", "Productions"])
+                st.table(df)
+                
+                # Offer explanation
+                with st.expander("How to read the CFG"):
+                    st.markdown("""
+                    A Context-Free Grammar consists of:
+                    - **Non-terminal symbols**: These are represented as S0, S1, etc.
+                    - **Terminal symbols**: These are the input alphabet (a, b, etc.)
+                    - **Production rules**: These show how non-terminals can be replaced
+                    - **Start symbol**: This is where the derivation begins
+                    
+                    Each rule shows how a non-terminal (left side) can be replaced with a sequence 
+                    of terminals and non-terminals (right side). The | symbol separates alternative productions.
+                    """)
+            
+            with tab3:
+                st.markdown(f"### Pushdown Automaton for: `{regex}`")
+                
+                # Display PDA details in a more organized way
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("#### States and Alphabets")
+                    st.info(f"Start State: q{pda['start_state']}")
+                    st.info(f"Final States: {', '.join([f'q{s}' for s in sorted(pda['final_states'])])}")
+                
+                with col2:
+                    st.markdown("#### Alphabets")
+                    st.info(f"Input Alphabet: {', '.join(sorted(pda['input_alphabet']))}")
+                    st.info(f"Initial Stack Symbol: {pda['start_stack_symbol']}")
+                
+                # Show some transitions (limited to avoid overwhelming)
+                st.markdown("#### Sample Transitions")
+                
+                transitions_data = []
+                for i, ((state, symbol, stack), (next_state, new_stack)) in enumerate(sorted(pda['transitions'].items())):
+                    if i >= 10:  # Limit to first 10 transitions
+                        break
+                    
+                    stack_str = stack
+                    new_stack_str = ", ".join(new_stack) if new_stack else "ε (pop)"
+                    
+                    transitions_data.append([
+                        f"q{state}", 
+                        symbol if symbol != 'ε' else "ε (epsilon)", 
+                        stack_str,
+                        f"q{next_state}",
+                        new_stack_str
+                    ])
+                
+                # Display as DataFrame
+                df = pd.DataFrame(
+                    transitions_data, 
+                    columns=["Current State", "Input Symbol", "Stack Top", "Next State", "New Stack"]
+                )
+                st.table(df)
+                
+                # Add note about transition count
+                if len(pda['transitions']) > 10:
+                    st.info(f"Showing 10 of {len(pda['transitions'])} transitions.")
+                
+                # Offer explanation
+                with st.expander("How to read the PDA"):
+                    st.markdown("""
+                    A Pushdown Automaton (PDA) consists of:
+                    - **States**: These are represented as q0, q1, etc.
+                    - **Input alphabet**: The symbols that can be read from the input
+                    - **Stack alphabet**: The symbols that can be pushed/popped from the stack
+                    - **Transitions**: Based on current state, input symbol, and stack top
+                    - **Start state and stack symbol**: Where processing begins
+                    - **Final states**: Accepting states
+                    
+                    Each transition shows:
+                    1. Current state
+                    2. Input symbol to read (or ε for no input)
+                    3. Symbol to pop from stack
+                    4. Next state to move to
+                    5. Symbols to push onto stack (rightmost pushed first)
+                    """)
+        
+        except Exception as e:
+            st.error(f"Error processing the regular expression: {str(e)}")
+            st.info("Please check your regex syntax and try again.")
+
+def render_footer():
+    """Render the app footer with additional information."""
+    st.markdown("---")
+    st.markdown(
+        '<div class="footer">'
+        '<p>Regex to Automata Converter | Enhanced with Modern UI/UX</p>'
+        '<p><small>📖 Uses Thompson\'s Construction Algorithm for NFA</small></p>'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+# ======== MAIN APP FUNCTION ========
+def main():
+    """Main function to run the Streamlit app."""
+    # Apply custom CSS
+    st.markdown(f'<style>{get_css()}</style>', unsafe_allow_html=True)
+    
+    # Render header
+    render_header()
+    
+    # Sidebar with additional info and settings
+    with st.sidebar:
+        st.markdown("### About")
+        st.markdown("""
+        This application converts regular expressions into:
+        - Deterministic Finite Automaton (DFA)
+        - Context-Free Grammar (CFG)
+        - Pushdown Automaton (PDA)
+        
+        You can also validate strings against the generated automaton.
+        """)
+        
+        st.markdown("### Syntax Guide")
+        st.markdown("""
+        - `a`, `b`, etc.: Basic symbols
+        - `+`: Union (OR) operation
+        - `*`: Kleene star (0 or more)
+        - `()`: Grouping
+        - `ε`: Empty string (represented as "")
+        """)
+        
+        # Optional settings
+        st.markdown("### Settings")
+        animation_speed = st.slider("Animation Speed", 0.5, 3.0, 1.0, 0.1)
+        dark_mode = st.toggle("Dark Mode", value=False)
+        
+        # Apply dark mode if selected
+        if dark_mode:
+            st.markdown("""
+            <style>
+            :root {
+                --background: #1e1e2e;
+                --card: #2a2a3c;
+                --dark: #e0e0e0;
+                --light: #2a2a3c;
+                --gray: #a0a0a0;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+    
+    # Main content area
+    container = st.container()
+    
+    with container:
+        # Get selected regex
+        selected_regex = render_regex_selector()
+        
+        # Only proceed if we have a regex
+        if selected_regex:
+            # Get input string and validation flag
+            input_string, validate = render_string_input_section(selected_regex)
+            
+            # Render the automaton visualization
+            render_automaton_visualization(selected_regex, input_string, validate)
+    
+    # Render footer
+    render_footer()
+
+# ======== APP ENTRY POINT ========
+if __name__ == "__main__":
+    main()
