@@ -609,39 +609,7 @@ def display_regex_conversion(regex, input_string=None):
                 G = nx.DiGraph()
                 fig, ax = plt.subplots(figsize=(12, 8))
                 
-                def update(frame):
-                    ax.clear()
-                    current_state = states_visited[min(frame, len(states_visited)-1)]
-                    
-                    # Draw nodes with current state highlighted
-                    node_colors = ['lightgreen' if node == current_state
-                                 else ('lightblue' if node in dfa['final_states']
-                                 else 'white') for node in G.nodes()]
-                    
-                    nx.draw_networkx_nodes(G, pos, node_size=700, 
-                                         node_color=node_colors, edgecolors='black')
-                    
-                    # Draw edges with current transition highlighted
-                    edge_colors = ['red' if frame > 0 and 
-                                 u == states_visited[frame-1] and 
-                                 v == states_visited[frame]
-                                 else 'black' for u, v in G.edges()]
-                    
-                    nx.draw_networkx_edges(G, pos, edge_color=edge_colors,
-                                         width=1.5, arrowsize=20)
-                    
-                    # Add labels and title
-                    if frame == 0:
-                        plt.title("Initial State", pad=20)
-                    elif frame < len(input_string) + 1:
-                        plt.title(f"Processing: {input_string[frame-1]}", pad=20)
-                    else:
-                        result = "Accepted" if is_valid else "Rejected"
-                        plt.title(f"Final State - String {result}", pad=20)
-                    
-                    plt.axis('off')
-                
-                # Set up the graph
+                # Set up the graph first
                 for state in dfa['states']:
                     G.add_node(state)
                 
@@ -653,15 +621,53 @@ def display_regex_conversion(regex, input_string=None):
                 
                 pos = nx.spring_layout(G, seed=42)
                 
+                def update(frame):
+                    ax.clear()
+                    current_state = states_visited[min(frame, len(states_visited)-1)]
+                    
+                    # Draw nodes with current state highlighted
+                    node_colors = ['lightgreen' if node == current_state
+                                  else ('lightblue' if node in dfa['final_states']
+                                  else 'white') for node in G.nodes()]
+                    
+                    nx.draw_networkx_nodes(G, pos, node_size=700, 
+                                         node_color=node_colors, edgecolors='black')
+                    
+                    # Draw edges with current transition highlighted
+                    edge_colors = ['red' if frame > 0 and (u, v) == (states_visited[frame-1], states_visited[min(frame, len(states_visited)-1)])
+                                  else 'black' for u, v in G.edges()]
+                    
+                    nx.draw_networkx_edges(G, pos, edge_color=edge_colors,
+                                         width=1.5, arrowsize=20)
+                    
+                    # Add edge labels
+                    edge_labels = {(u, v): G[u][v]['label'] for u, v in G.edges()}
+                    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+                    
+                    # Add node labels
+                    node_labels = {node: f"q{node}" for node in G.nodes()}
+                    nx.draw_networkx_labels(G, pos, labels=node_labels)
+                    
+                    # Add title based on current frame
+                    if frame == 0:
+                        plt.title("Initial State", pad=20)
+                    elif frame < len(input_string) + 1:
+                        plt.title(f"Processing: {input_string[frame-1]}", pad=20)
+                    else:
+                        result = "Accepted" if is_valid else "Rejected"
+                        plt.title(f"Final State - String {result}", pad=20)
+                    
+                    plt.axis('off')
+                
                 # Create animation
                 anim = animation.FuncAnimation(
                     fig, update,
-                    frames=len(states_visited) + 1,
+                    frames=len(states_visited),
                     interval=1000,  # 1 second between frames
                     repeat=True
                 )
                 
-                # Convert animation to HTML
+                # Convert animation to HTML and display
                 animation_html = anim.to_jshtml()
                 st.components.v1.html(animation_html, height=600)
                 
