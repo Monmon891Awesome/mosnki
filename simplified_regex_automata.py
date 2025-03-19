@@ -585,8 +585,6 @@ def display_regex_conversion(regex, input_string=None):
     with st.spinner("Converting regex to automata..."):
         # Get a fresh DFA each time
         dfa = get_dfa_from_regex(regex)
-        
-        # Generate CFG and PDA
         cfg = dfa_to_cfg(dfa)
         pda = dfa_to_pda(dfa)
         
@@ -605,37 +603,75 @@ def display_regex_conversion(regex, input_string=None):
             st.write(f"Entered String: {input_string}")
             
             with animation_container:
-                st.markdown("### Step-by-Step Animation")
-                st.markdown("Use the slider below to see how the DFA processes the input string:")
+                st.markdown("### Animated DFA Processing")
                 
-                # Create frames with larger figure size
-                frames = create_dfa_frames(dfa, input_string, states_visited)
+                # Create animation using FuncAnimation
+                G = nx.DiGraph()
+                fig, ax = plt.subplots(figsize=(12, 8))
                 
-                # Add a slider with more prominent styling
-                frame_index = st.slider(
-                    "Animation Step",
-                    0,
-                    len(frames)-1,
-                    0,
-                    key="animation_slider"
+                def update(frame):
+                    ax.clear()
+                    current_state = states_visited[min(frame, len(states_visited)-1)]
+                    
+                    # Draw nodes with current state highlighted
+                    node_colors = ['lightgreen' if node == current_state
+                                 else ('lightblue' if node in dfa['final_states']
+                                 else 'white') for node in G.nodes()]
+                    
+                    nx.draw_networkx_nodes(G, pos, node_size=700, 
+                                         node_color=node_colors, edgecolors='black')
+                    
+                    # Draw edges with current transition highlighted
+                    edge_colors = ['red' if frame > 0 and 
+                                 u == states_visited[frame-1] and 
+                                 v == states_visited[frame]
+                                 else 'black' for u, v in G.edges()]
+                    
+                    nx.draw_networkx_edges(G, pos, edge_color=edge_colors,
+                                         width=1.5, arrowsize=20)
+                    
+                    # Add labels and title
+                    if frame == 0:
+                        plt.title("Initial State", pad=20)
+                    elif frame < len(input_string) + 1:
+                        plt.title(f"Processing: {input_string[frame-1]}", pad=20)
+                    else:
+                        result = "Accepted" if is_valid else "Rejected"
+                        plt.title(f"Final State - String {result}", pad=20)
+                    
+                    plt.axis('off')
+                
+                # Set up the graph
+                for state in dfa['states']:
+                    G.add_node(state)
+                
+                for (state, symbol), next_state in dfa['transitions'].items():
+                    if G.has_edge(state, next_state):
+                        G[state][next_state]['label'] += f", {symbol}"
+                    else:
+                        G.add_edge(state, next_state, label=symbol)
+                
+                pos = nx.spring_layout(G, seed=42)
+                
+                # Create animation
+                anim = animation.FuncAnimation(
+                    fig, update,
+                    frames=len(states_visited) + 1,
+                    interval=1000,  # 1 second between frames
+                    repeat=True
                 )
                 
-                # Display the current frame with full width
-                st.pyplot(frames[frame_index], use_container_width=True)
-                
-                # Show current step information
-                if frame_index == 0:
-                    st.info("Initial state")
-                elif frame_index < len(input_string) + 1:
-                    st.info(f"Processing character: {input_string[frame_index-1]}")
-                else:
-                    st.info("Final state")
+                # Convert animation to HTML
+                animation_html = anim.to_jshtml()
+                st.components.v1.html(animation_html, height=600)
                 
                 # Show validation result
                 if is_valid:
-                    st.markdown(f'<div class="success-message">The string \'{input_string}\' is valid for the DFA.</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="success-message">The string \'{input_string}\' is valid for the DFA.</div>', 
+                              unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div class="error-message">The string \'{input_string}\' is NOT valid for the DFA.</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="error-message">The string \'{input_string}\' is NOT valid for the DFA.</div>', 
+                              unsafe_allow_html=True)
         
         # Show CFG and PDA in expanders below the animation
         with st.expander("Context-Free Grammar (CFG) Representation"):
