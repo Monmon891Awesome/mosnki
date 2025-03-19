@@ -467,9 +467,10 @@ def visualize_dfa(dfa):
     
     return plt
 
-# Animation of DFA processing an input string
-def create_dfa_animation(dfa, input_string, states_visited):
-    """Create an animation of the DFA processing the input string."""
+# Create static frames for visualization instead of animation
+def create_dfa_frames(dfa, input_string, states_visited):
+    """Create a series of static frames of the DFA process instead of animation."""
+    frames = []
     G = nx.DiGraph()
     
     # Add all states as nodes
@@ -489,12 +490,9 @@ def create_dfa_animation(dfa, input_string, states_visited):
     # Position the nodes
     pos = nx.spring_layout(G, seed=42)
     
-    # Create a figure and axis
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    # Function to draw the current state of the DFA
-    def draw_frame(i):
-        ax.clear()
+    # Generate each frame
+    for i in range(len(states_visited) + 1):
+        fig, ax = plt.subplots(figsize=(10, 6))
         
         # Determine highlight states and transitions
         highlight_states = [states_visited[min(i, len(states_visited)-1)]]
@@ -504,17 +502,21 @@ def create_dfa_animation(dfa, input_string, states_visited):
             highlight_transitions = [(states_visited[i-1], states_visited[i])]
         
         # Draw nodes
-        node_colors = ['lightgreen' if node in highlight_states else ('lightblue' if G.nodes[node]['is_final'] else 'white') for node in G.nodes]
+        node_colors = ['lightgreen' if node in highlight_states else 
+                       ('lightblue' if G.nodes[node]['is_final'] else 'white') 
+                       for node in G.nodes]
         nx.draw_networkx_nodes(G, pos, node_size=700, node_color=node_colors, edgecolors='black', ax=ax)
         
         # Double circle for final states
         final_states = [state for state in dfa['states'] if state in dfa['final_states']]
-        nx.draw_networkx_nodes(G, pos, nodelist=final_states, node_size=600, node_color='none', edgecolors='black', ax=ax)
+        nx.draw_networkx_nodes(G, pos, nodelist=final_states, node_size=600, 
+                              node_color='none', edgecolors='black', ax=ax)
         
         # Special marker for start state
         start_state = dfa['start_state']
-        ax.annotate('', xy=pos[start_state], xytext=(pos[start_state][0]-0.1, pos[start_state][1]), 
-                     arrowprops=dict(arrowstyle="->", color='black'))
+        ax.annotate('', xy=pos[start_state], 
+                   xytext=(pos[start_state][0]-0.1, pos[start_state][1]), 
+                   arrowprops=dict(arrowstyle="->", color='black'))
         
         # Draw edges
         edges = G.edges()
@@ -526,7 +528,8 @@ def create_dfa_animation(dfa, input_string, states_visited):
             else:
                 edge_colors.append('black')
         
-        nx.draw_networkx_edges(G, pos, edgelist=edges, width=1.5, arrowsize=20, edge_color=edge_colors, ax=ax)
+        nx.draw_networkx_edges(G, pos, edgelist=edges, width=1.5, 
+                              arrowsize=20, edge_color=edge_colors, ax=ax)
         
         # Add edge labels
         edge_labels = {(u, v): G[u][v]['label'] for u, v in G.edges()}
@@ -544,10 +547,11 @@ def create_dfa_animation(dfa, input_string, states_visited):
             
             # If there's a transition, show the symbol on the edge
             if current_state != next_state:
-                edge_label = G[current_state][next_state]['label']
-                ax.set_title(f"Processing: '{char}' | Transition: q{current_state} --{char}--> q{next_state}", fontsize=16)
+                ax.set_title(f"Processing: '{char}' | Transition: q{current_state} --{char}--> q{next_state}", 
+                            fontsize=16)
             else:
-                ax.set_title(f"Processing: '{char}' | No valid transition from q{current_state}", fontsize=16)
+                ax.set_title(f"Processing: '{char}' | No valid transition from q{current_state}", 
+                            fontsize=16)
         elif i == 0:
             ax.set_title(f"Start: at state q{states_visited[0]}", fontsize=16)
         else:
@@ -555,13 +559,9 @@ def create_dfa_animation(dfa, input_string, states_visited):
             ax.set_title(f"Finished: String {result}", fontsize=16)
         
         ax.axis('off')
+        frames.append(fig)
     
-    # Create the animation
-    anim = animation.FuncAnimation(fig, draw_frame, frames=len(states_visited) + 1, interval=1000, repeat=True)
-    
-    plt.close(fig)  # Don't display the figure, just return the animation
-    
-    return anim
+    return frames
 
 # Create DFA from regex without caching
 def get_dfa_from_regex(regex):
@@ -577,7 +577,7 @@ def get_dfa_from_regex(regex):
     
     return dfa
 
-# Display the regex conversion with minimal caching
+# Display the regex conversion with step-by-step frames instead of animation
 def display_regex_conversion(regex, input_string=None):
     """Display the converted regex as DFA, CFG, and PDA."""
     st.markdown(f'<h2 class="sub-header">Deterministic Finite Automaton for: {regex}</h2>', unsafe_allow_html=True)
@@ -595,14 +595,12 @@ def display_regex_conversion(regex, input_string=None):
             states_visited, is_valid = simulate_dfa(dfa, input_string)
             st.write(f"Entered String: {input_string}")
             
-            # Create animation
-            anim = create_dfa_animation(dfa, input_string, states_visited)
+            # Create frames for step-by-step visualization
+            frames = create_dfa_frames(dfa, input_string, states_visited)
             
-            # Display animation
-            html_anim = anim.to_jshtml()
-            
-            # Show the animation
-            st.components.v1.html(html_anim, height=500)
+            # Add a slider to browse through frames
+            frame_index = st.slider("Animation Step", 0, len(frames)-1, 0)
+            st.pyplot(frames[frame_index])
             
             # Show validation result
             if is_valid:
@@ -667,12 +665,12 @@ with col1:
         display_text = example if example != "" else "empty string"
         if example_buttons[i].button(display_text, key=f"example_{selected_regex}_{i}"):
             st.session_state.input_string = example
-            st.rerun()  # Updated from experimental_rerun
+            st.rerun()  # Use rerun instead of experimental_rerun
 
 with col2:
     if st.button("Validate", use_container_width=True, key="validate_button"):
         if input_string:
-            # Display the conversion with animation for the input string
+            # Display the conversion with frames for the input string
             display_regex_conversion(selected_regex, input_string)
         else:
             st.error("Please enter a string to validate.")
