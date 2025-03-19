@@ -667,17 +667,23 @@ def display_regex_conversion(regex, input_string=None):
                     repeat=True
                 )
                 
-                # Convert animation to HTML and display
-                animation_html = anim.to_jshtml()
-                st.components.v1.html(animation_html, height=600)
-                
-                # Show validation result
-                if is_valid:
-                    st.markdown(f'<div class="success-message">The string \'{input_string}\' is valid for the DFA.</div>', 
-                              unsafe_allow_html=True)
-                else:
-                    st.markdown(f'<div class="error-message">The string \'{input_string}\' is NOT valid for the DFA.</div>', 
-                              unsafe_allow_html=True)
+                # Add container for animation with fixed height
+                animation_div = st.container()
+                with animation_div:
+                    # Convert animation to HTML and display with adjusted height
+                    animation_html = anim.to_jshtml()
+                    st.components.v1.html(animation_html, height=500)
+                    
+                    # Add spacing before validation result
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    # Show validation result
+                    if is_valid:
+                        st.markdown(f'<div class="success-message">The string \'{input_string}\' is valid for the DFA.</div>', 
+                                  unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'<div class="error-message">The string \'{input_string}\' is NOT valid for the DFA.</div>', 
+                                  unsafe_allow_html=True)
         
         # Show CFG and PDA in expanders below the animation
         with st.expander("Context-Free Grammar (CFG) Representation"):
