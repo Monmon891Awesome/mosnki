@@ -609,10 +609,10 @@ def display_regex_conversion(regex, input_string=None):
                 st.markdown(f'<div class="success-message">The string \'{input_string}\' is valid for the DFA.</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="error-message">The string \'{input_string}\' is NOT valid for the DFA.</div>', unsafe_allow_html=True)
-            else:
-                # Just show the static DFA visualization
-                fig = visualize_dfa(dfa)
-                st.pyplot(fig)
+        else:
+            # Just show the static DFA visualization
+            fig = visualize_dfa(dfa)
+            st.pyplot(fig)
         
         # Show CFG in expander
         with st.expander("Context-Free Grammar (CFG) Representation"):
