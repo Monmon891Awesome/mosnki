@@ -59,13 +59,13 @@ st.markdown("""
 
 st.markdown('<h1 class="main-header">Simplified Regex to DFA, CFG & PDA Converter</h1>', unsafe_allow_html=True)
 
-# Define just two regular expressions for better performance
+# Define regular expressions for better performance
 regex_options = {
     "(a+b)*": "Any sequence of a's and b's (includes empty string)",
     "a*b*": "Any sequence of a's followed by any sequence of b's (includes empty string)"
 }
 
-# Thompson's algorithm for NFA construction - IMPROVED with unique IDs
+# Thompson's algorithm for NFA construction - with ID-based states
 class NFAState:
     _next_id = 0  # Class variable for generating unique IDs
     
@@ -86,7 +86,7 @@ class NFAState:
         self.epsilon_transitions.append(state)
     
     def __hash__(self):
-        return hash(self.state_id)  # Make NFAState hashable based on ID
+        return hash(self.state_id)
     
     def __eq__(self, other):
         if isinstance(other, NFAState):
@@ -99,12 +99,11 @@ class NFA:
         self.end_state = end_state
         end_state.is_final = True
     
-    # Reset NFAState IDs between regex conversions to ensure consistent states
     @staticmethod
     def reset_state_ids():
         NFAState._next_id = 0
 
-# Improved epsilon closure function using state IDs for better hashing
+# Epsilon closure function - identifies all states reachable via epsilon transitions
 def epsilon_closure(state, visited=None):
     if visited is None:
         visited = set()
@@ -118,15 +117,15 @@ def epsilon_closure(state, visited=None):
     
     return visited
 
-# Using state IDs for better serialization
+# Get a set of state IDs for better serialization
 def get_state_id_set(states):
     return frozenset(state.state_id for state in states)
 
-# Improved regex to NFA conversion that resets state IDs
+# Convert regex to NFA
 def regex_to_nfa(regex):
     """Convert a regular expression to an NFA using Thompson's construction algorithm."""
     
-    # Reset state IDs to maintain consistency between runs
+    # Reset state IDs to maintain consistency
     NFA.reset_state_ids()
     
     def handle_concatenation(nfa1, nfa2):
@@ -246,14 +245,14 @@ def regex_to_nfa(regex):
     nfa, _ = parse_regex(regex)
     return nfa
 
-# Improved NFA to DFA conversion using state IDs for better hashing
+# Convert NFA to DFA using subset construction
 def nfa_to_dfa(nfa):
-    """Convert an NFA to a DFA using the subset construction algorithm with improved hashing."""
+    """Convert an NFA to a DFA using the subset construction algorithm."""
     
     alphabet = set()
-    state_map = {}  # Map NFAState objects to their IDs for consistent lookup
+    state_map = {}  # Map state IDs to NFAState objects
     
-    # Collect all symbols in the NFA and create state map
+    # Collect all symbols and build state map
     queue = [nfa.start_state]
     visited = set()
     
@@ -275,7 +274,7 @@ def nfa_to_dfa(nfa):
             if eps_state not in visited:
                 queue.append(eps_state)
     
-    # Start with epsilon closure of the start state using IDs instead of objects
+    # Start with epsilon closure of the start state
     start_states = epsilon_closure(nfa.start_state)
     start_ids = get_state_id_set(start_states)
     
@@ -328,7 +327,7 @@ def nfa_to_dfa(nfa):
             # Add transition to DFA
             dfa_transitions[(current_dfa_state, symbol)] = dfa_states[next_state_ids]
     
-    # Create the formal DFA structure
+    # Create the formal DFA structure (simple dictionary format for easy serialization)
     dfa = {
         'states': set(range(len(dfa_states))),
         'alphabet': alphabet,
@@ -339,9 +338,7 @@ def nfa_to_dfa(nfa):
     
     return dfa
 
-# Rest of the code remains largely unchanged since it operates on the DFA,
-# which now has a stable serialization format
-
+# Convert DFA to CFG
 def dfa_to_cfg(dfa):
     """Convert a DFA to a Context-Free Grammar"""
     cfg = {}
@@ -373,6 +370,7 @@ def dfa_to_cfg(dfa):
         'productions': cfg
     }
 
+# Convert DFA to PDA
 def dfa_to_pda(dfa):
     """Convert a DFA to a Pushdown Automaton"""
     pda = {
@@ -402,6 +400,7 @@ def dfa_to_pda(dfa):
     
     return pda
 
+# Simulate a DFA on an input string
 def simulate_dfa(dfa, input_string):
     """Simulate a DFA on an input string and return the states visited."""
     current_state = dfa['start_state']
@@ -416,13 +415,9 @@ def simulate_dfa(dfa, input_string):
     
     return states_visited, current_state in dfa['final_states']
 
-# Cache the visualization with a more hashable set of parameters
-@st.cache_data
-def visualize_dfa(dfa_hash):
+# Visualize a DFA without caching
+def visualize_dfa(dfa):
     """Visualize a DFA using networkx and matplotlib."""
-    # Unhash the DFA (simply use it directly since it's already in a hashable format)
-    dfa = dfa_hash
-    
     G = nx.DiGraph()
     
     # Add all states as nodes
@@ -472,6 +467,7 @@ def visualize_dfa(dfa_hash):
     
     return plt
 
+# Animation of DFA processing an input string
 def create_dfa_animation(dfa, input_string, states_visited):
     """Create an animation of the DFA processing the input string."""
     G = nx.DiGraph()
@@ -567,37 +563,34 @@ def create_dfa_animation(dfa, input_string, states_visited):
     
     return anim
 
-# Function to display the regular expression to automata conversion
-# Modified for better caching with hashing
+# Create DFA from regex without caching
+def get_dfa_from_regex(regex):
+    """Create a DFA from a regex, avoiding caching issues."""
+    # Reset NFA state IDs to ensure consistent generation
+    NFA.reset_state_ids()
+    
+    # Convert regex to NFA
+    nfa = regex_to_nfa(regex)
+    
+    # Convert NFA to DFA
+    dfa = nfa_to_dfa(nfa)
+    
+    return dfa
+
+# Display the regex conversion with minimal caching
 def display_regex_conversion(regex, input_string=None):
+    """Display the converted regex as DFA, CFG, and PDA."""
     st.markdown(f'<h2 class="sub-header">Deterministic Finite Automaton for: {regex}</h2>', unsafe_allow_html=True)
     
     with st.spinner("Converting regex to automata..."):
-        # Use a unique key for caching based on the regex
-        cache_key = f"regex_{regex}"
-        
-        # Check if we already have the DFA in session state
-        if cache_key not in st.session_state:
-            # Convert regex to NFA
-            nfa = regex_to_nfa(regex)
-            
-            # Convert NFA to DFA
-            dfa = nfa_to_dfa(nfa)
-            
-            # Store the dfa in session state for reuse
-            st.session_state[cache_key] = dfa
-        else:
-            # Use the cached DFA
-            dfa = st.session_state[cache_key]
-        
-        # Store the current dfa in session state for validation
-        st.session_state.current_dfa = dfa
+        # Get a fresh DFA each time
+        dfa = get_dfa_from_regex(regex)
         
         # Generate CFG and PDA
         cfg = dfa_to_cfg(dfa)
         pda = dfa_to_pda(dfa)
         
-        # Visualize DFA
+        # Visualize with input string if provided
         if input_string:
             states_visited, is_valid = simulate_dfa(dfa, input_string)
             st.write(f"Entered String: {input_string}")
@@ -616,10 +609,10 @@ def display_regex_conversion(regex, input_string=None):
                 st.markdown(f'<div class="success-message">The string \'{input_string}\' is valid for the DFA.</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="error-message">The string \'{input_string}\' is NOT valid for the DFA.</div>', unsafe_allow_html=True)
-        else:
-            # Just show the static DFA visualization
-            fig = visualize_dfa(dfa)
-            st.pyplot(fig)
+            else:
+                # Just show the static DFA visualization
+                fig = visualize_dfa(dfa)
+                st.pyplot(fig)
         
         # Show CFG in expander
         with st.expander("Context-Free Grammar (CFG) Representation"):
@@ -640,9 +633,9 @@ def display_regex_conversion(regex, input_string=None):
             st.write(f"Input Alphabet: {', '.join(sorted(pda['input_alphabet']))}")
             st.write(f"Stack Alphabet: {', '.join(sorted(list(pda['stack_alphabet'])[:5]))}...")  # Show only a sample
 
-# Initialize session state for DFA
-if 'current_dfa' not in st.session_state:
-    st.session_state.current_dfa = None
+# Initialize session state for input string
+if 'input_string' not in st.session_state:
+    st.session_state.input_string = None
 
 # Main app logic
 st.markdown('<h2 class="sub-header">Select a Regular Expression</h2>', unsafe_allow_html=True)
@@ -663,17 +656,18 @@ st.markdown('<h2 class="sub-header">Enter a string to check its validity for dis
 col1, col2 = st.columns([3, 1])
 
 with col1:
-    input_string = st.text_input("", placeholder="Enter a string (e.g., abababba)")
+    input_string = st.text_input("", placeholder="Enter a string (e.g., abababba)", key="input_string_field")
     
     # Show example strings for the selected regex
     st.markdown("**Examples to try:**")
     example_buttons = st.columns(len(examples[selected_regex]))
     
     for i, example in enumerate(examples[selected_regex]):
+        # Ensure each button has a unique key
         display_text = example if example != "" else "empty string"
         if example_buttons[i].button(display_text, key=f"example_{selected_regex}_{i}"):
-            input_string = example
             st.session_state.input_string = example
+            st.experimental_rerun()  # Force a rerun to update the UI
 
 with col2:
     if st.button("Validate", use_container_width=True, key="validate_button"):
@@ -684,9 +678,9 @@ with col2:
             st.error("Please enter a string to validate.")
 
 # If there's an example input string set from button clicks
-if 'input_string' in st.session_state and st.session_state.input_string:
+if st.session_state.input_string:
     display_regex_conversion(selected_regex, st.session_state.input_string)
-    # Clear the session state to prevent re-running on every page load
+    # Clear the session state after use
     st.session_state.input_string = None
 
 # Footer
