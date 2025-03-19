@@ -1,1 +1,5 @@
 streamlit
+networkx
+matplotlib
+pandas
+ipython
