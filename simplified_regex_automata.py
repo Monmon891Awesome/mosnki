@@ -667,7 +667,7 @@ with col1:
         display_text = example if example != "" else "empty string"
         if example_buttons[i].button(display_text, key=f"example_{selected_regex}_{i}"):
             st.session_state.input_string = example
-            st.experimental_rerun()  # Force a rerun to update the UI
+            st.rerun()  # Updated from experimental_rerun
 
 with col2:
     if st.button("Validate", use_container_width=True, key="validate_button"):
