@@ -590,29 +590,54 @@ def display_regex_conversion(regex, input_string=None):
         cfg = dfa_to_cfg(dfa)
         pda = dfa_to_pda(dfa)
         
+        # Create two containers for better layout
+        static_container = st.container()
+        animation_container = st.container()
+        
+        with static_container:
+            st.markdown("### Static DFA Visualization")
+            fig = visualize_dfa(dfa)
+            st.pyplot(fig)
+        
         # Visualize with input string if provided
         if input_string:
             states_visited, is_valid = simulate_dfa(dfa, input_string)
             st.write(f"Entered String: {input_string}")
             
-            # Create frames for step-by-step visualization
-            frames = create_dfa_frames(dfa, input_string, states_visited)
-            
-            # Add a slider to browse through frames
-            frame_index = st.slider("Animation Step", 0, len(frames)-1, 0)
-            st.pyplot(frames[frame_index])
-            
-            # Show validation result
-            if is_valid:
-                st.markdown(f'<div class="success-message">The string \'{input_string}\' is valid for the DFA.</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(f'<div class="error-message">The string \'{input_string}\' is NOT valid for the DFA.</div>', unsafe_allow_html=True)
-        else:
-            # Just show the static DFA visualization
-            fig = visualize_dfa(dfa)
-            st.pyplot(fig)
+            with animation_container:
+                st.markdown("### Step-by-Step Animation")
+                st.markdown("Use the slider below to see how the DFA processes the input string:")
+                
+                # Create frames with larger figure size
+                frames = create_dfa_frames(dfa, input_string, states_visited)
+                
+                # Add a slider with more prominent styling
+                frame_index = st.slider(
+                    "Animation Step",
+                    0,
+                    len(frames)-1,
+                    0,
+                    key="animation_slider"
+                )
+                
+                # Display the current frame with full width
+                st.pyplot(frames[frame_index], use_container_width=True)
+                
+                # Show current step information
+                if frame_index == 0:
+                    st.info("Initial state")
+                elif frame_index < len(input_string) + 1:
+                    st.info(f"Processing character: {input_string[frame_index-1]}")
+                else:
+                    st.info("Final state")
+                
+                # Show validation result
+                if is_valid:
+                    st.markdown(f'<div class="success-message">The string \'{input_string}\' is valid for the DFA.</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="error-message">The string \'{input_string}\' is NOT valid for the DFA.</div>', unsafe_allow_html=True)
         
-        # Show CFG in expander
+        # Show CFG and PDA in expanders below the animation
         with st.expander("Context-Free Grammar (CFG) Representation"):
             st.markdown("### Productions")
             st.write(f"Start Symbol: {cfg['start_symbol']}")
@@ -620,7 +645,6 @@ def display_regex_conversion(regex, input_string=None):
                 production_str = " | ".join(productions) if productions else "ε"
                 st.write(f"{nt} → {production_str}")
         
-        # Show PDA in expander (simplified to reduce complexity)
         with st.expander("Pushdown Automaton (PDA) Representation"):
             st.markdown("### States")
             st.write(f"States: {', '.join([f'q{s}' for s in sorted(pda['states'])])}")
@@ -629,7 +653,7 @@ def display_regex_conversion(regex, input_string=None):
             
             st.markdown("### Alphabets")
             st.write(f"Input Alphabet: {', '.join(sorted(pda['input_alphabet']))}")
-            st.write(f"Stack Alphabet: {', '.join(sorted(list(pda['stack_alphabet'])[:5]))}...")  # Show only a sample
+            st.write(f"Stack Alphabet: {', '.join(sorted(list(pda['stack_alphabet'])[:5]))}...")
 
 # Initialize session state for input string
 if 'input_string' not in st.session_state:
