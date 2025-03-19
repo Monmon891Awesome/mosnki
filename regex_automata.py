@@ -149,16 +149,16 @@ class NFA:
 
 
 @st.cache_data
-def epsilon_closure(state, visited=None):
+def epsilon_closure(_state, visited=None):
     """Calculate epsilon closure with caching for performance."""
     if visited is None:
         visited = set()
 
-    if state in visited:
+    if _state in visited:
         return visited
 
-    visited.add(state)
-    for eps_state in state.epsilon_transitions:
+    visited.add(_state)
+    for eps_state in _state.epsilon_transitions:
         epsilon_closure(eps_state, visited)
 
     return visited
