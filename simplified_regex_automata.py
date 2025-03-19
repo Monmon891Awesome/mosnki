@@ -65,13 +65,16 @@ regex_options = {
     "a*b*": "Any sequence of a's followed by any sequence of b's (includes empty string)"
 }
 
-# Thompson's algorithm for NFA construction
+# Thompson's algorithm for NFA construction - IMPROVED with unique IDs
 class NFAState:
+    _next_id = 0  # Class variable for generating unique IDs
+    
     def __init__(self, is_final=False):
         self.transitions = {}  # Dictionary to store transitions {symbol: [states]}
         self.epsilon_transitions = []  # List to store epsilon transitions
         self.is_final = is_final
-        self.state_id = None  # For visualization purposes
+        self.state_id = NFAState._next_id  # Assign unique ID
+        NFAState._next_id += 1
 
     def add_transition(self, symbol, state):
         if symbol in self.transitions:
@@ -81,14 +84,27 @@ class NFAState:
 
     def add_epsilon_transition(self, state):
         self.epsilon_transitions.append(state)
+    
+    def __hash__(self):
+        return hash(self.state_id)  # Make NFAState hashable based on ID
+    
+    def __eq__(self, other):
+        if isinstance(other, NFAState):
+            return self.state_id == other.state_id
+        return False
 
 class NFA:
     def __init__(self, start_state, end_state):
         self.start_state = start_state
         self.end_state = end_state
         end_state.is_final = True
+    
+    # Reset NFAState IDs between regex conversions to ensure consistent states
+    @staticmethod
+    def reset_state_ids():
+        NFAState._next_id = 0
 
-@st.cache_data
+# Improved epsilon closure function using state IDs for better hashing
 def epsilon_closure(state, visited=None):
     if visited is None:
         visited = set()
@@ -102,9 +118,16 @@ def epsilon_closure(state, visited=None):
     
     return visited
 
-@st.cache_data
+# Using state IDs for better serialization
+def get_state_id_set(states):
+    return frozenset(state.state_id for state in states)
+
+# Improved regex to NFA conversion that resets state IDs
 def regex_to_nfa(regex):
     """Convert a regular expression to an NFA using Thompson's construction algorithm."""
+    
+    # Reset state IDs to maintain consistency between runs
+    NFA.reset_state_ids()
     
     def handle_concatenation(nfa1, nfa2):
         nfa1.end_state.add_epsilon_transition(nfa2.start_state)
@@ -157,7 +180,7 @@ def regex_to_nfa(regex):
                 if current_nfa is not None:
                     return current_nfa, i
                 else:
-                    return NFAState(), i
+                    return NFA(NFAState(), NFAState(is_final=True)), i
             
             elif c == '+':
                 if i + 1 < len(regex):
@@ -223,13 +246,14 @@ def regex_to_nfa(regex):
     nfa, _ = parse_regex(regex)
     return nfa
 
-@st.cache_data
+# Improved NFA to DFA conversion using state IDs for better hashing
 def nfa_to_dfa(nfa):
-    """Convert an NFA to a DFA using the subset construction algorithm."""
+    """Convert an NFA to a DFA using the subset construction algorithm with improved hashing."""
     
     alphabet = set()
+    state_map = {}  # Map NFAState objects to their IDs for consistent lookup
     
-    # Collect all symbols in the NFA using BFS
+    # Collect all symbols in the NFA and create state map
     queue = [nfa.start_state]
     visited = set()
     
@@ -239,6 +263,7 @@ def nfa_to_dfa(nfa):
             continue
             
         visited.add(state)
+        state_map[state.state_id] = state
         
         for symbol in state.transitions:
             alphabet.add(symbol)
@@ -250,23 +275,27 @@ def nfa_to_dfa(nfa):
             if eps_state not in visited:
                 queue.append(eps_state)
     
-    # Start with epsilon closure of the start state
-    start_closure = frozenset(epsilon_closure(nfa.start_state))
+    # Start with epsilon closure of the start state using IDs instead of objects
+    start_states = epsilon_closure(nfa.start_state)
+    start_ids = get_state_id_set(start_states)
     
-    # Map NFA state sets to DFA states
-    dfa_states = {start_closure: 0}  # Start state is 0
+    # Map NFA state ID sets to DFA states
+    dfa_states = {start_ids: 0}  # Start state is 0
     dfa_transitions = {}
     dfa_final_states = set()
     
     # Check if the start state is also a final state
-    if any(state.is_final for state in start_closure):
+    if any(state.is_final for state in start_states):
         dfa_final_states.add(0)
     
-    # Process queue more efficiently
-    queue = [start_closure]
+    # Process queue with state IDs for better hashing
+    queue = [start_ids]
     while queue:
-        current_states = queue.pop(0)
-        current_dfa_state = dfa_states[current_states]
+        current_state_ids = queue.pop(0)
+        current_dfa_state = dfa_states[current_state_ids]
+        
+        # Convert IDs back to NFAState objects for processing
+        current_states = {state_map[state_id] for state_id in current_state_ids}
         
         for symbol in alphabet:
             next_states = set()
@@ -284,19 +313,20 @@ def nfa_to_dfa(nfa):
             if not epsilon_states:
                 continue
                 
-            next_states_frozen = frozenset(epsilon_states)
+            # Convert to IDs for hashing
+            next_state_ids = get_state_id_set(epsilon_states)
             
             # Add new DFA state if needed
-            if next_states_frozen not in dfa_states:
-                dfa_states[next_states_frozen] = len(dfa_states)
-                queue.append(next_states_frozen)
+            if next_state_ids not in dfa_states:
+                dfa_states[next_state_ids] = len(dfa_states)
+                queue.append(next_state_ids)
                 
                 # Check if it's a final state
-                if any(state.is_final for state in epsilon_states):
-                    dfa_final_states.add(dfa_states[next_states_frozen])
+                if any(state_map[state_id].is_final for state_id in next_state_ids):
+                    dfa_final_states.add(dfa_states[next_state_ids])
             
             # Add transition to DFA
-            dfa_transitions[(current_dfa_state, symbol)] = dfa_states[next_states_frozen]
+            dfa_transitions[(current_dfa_state, symbol)] = dfa_states[next_state_ids]
     
     # Create the formal DFA structure
     dfa = {
@@ -309,7 +339,9 @@ def nfa_to_dfa(nfa):
     
     return dfa
 
-@st.cache_data
+# Rest of the code remains largely unchanged since it operates on the DFA,
+# which now has a stable serialization format
+
 def dfa_to_cfg(dfa):
     """Convert a DFA to a Context-Free Grammar"""
     cfg = {}
@@ -341,7 +373,6 @@ def dfa_to_cfg(dfa):
         'productions': cfg
     }
 
-@st.cache_data
 def dfa_to_pda(dfa):
     """Convert a DFA to a Pushdown Automaton"""
     pda = {
@@ -385,9 +416,13 @@ def simulate_dfa(dfa, input_string):
     
     return states_visited, current_state in dfa['final_states']
 
+# Cache the visualization with a more hashable set of parameters
 @st.cache_data
-def visualize_dfa(dfa):
+def visualize_dfa(dfa_hash):
     """Visualize a DFA using networkx and matplotlib."""
+    # Unhash the DFA (simply use it directly since it's already in a hashable format)
+    dfa = dfa_hash
+    
     G = nx.DiGraph()
     
     # Add all states as nodes
@@ -533,17 +568,29 @@ def create_dfa_animation(dfa, input_string, states_visited):
     return anim
 
 # Function to display the regular expression to automata conversion
+# Modified for better caching with hashing
 def display_regex_conversion(regex, input_string=None):
     st.markdown(f'<h2 class="sub-header">Deterministic Finite Automaton for: {regex}</h2>', unsafe_allow_html=True)
     
     with st.spinner("Converting regex to automata..."):
-        # Convert regex to NFA
-        nfa = regex_to_nfa(regex)
+        # Use a unique key for caching based on the regex
+        cache_key = f"regex_{regex}"
         
-        # Convert NFA to DFA
-        dfa = nfa_to_dfa(nfa)
+        # Check if we already have the DFA in session state
+        if cache_key not in st.session_state:
+            # Convert regex to NFA
+            nfa = regex_to_nfa(regex)
+            
+            # Convert NFA to DFA
+            dfa = nfa_to_dfa(nfa)
+            
+            # Store the dfa in session state for reuse
+            st.session_state[cache_key] = dfa
+        else:
+            # Use the cached DFA
+            dfa = st.session_state[cache_key]
         
-        # Store the dfa in session state for validation
+        # Store the current dfa in session state for validation
         st.session_state.current_dfa = dfa
         
         # Generate CFG and PDA
@@ -624,12 +671,12 @@ with col1:
     
     for i, example in enumerate(examples[selected_regex]):
         display_text = example if example != "" else "empty string"
-        if example_buttons[i].button(display_text):
+        if example_buttons[i].button(display_text, key=f"example_{selected_regex}_{i}"):
             input_string = example
             st.session_state.input_string = example
 
 with col2:
-    if st.button("Validate", use_container_width=True):
+    if st.button("Validate", use_container_width=True, key="validate_button"):
         if input_string:
             # Display the conversion with animation for the input string
             display_regex_conversion(selected_regex, input_string)
