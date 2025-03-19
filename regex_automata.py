@@ -298,12 +298,12 @@ def regex_to_nfa(_regex):
 
 
 @st.cache_data
-def nfa_to_dfa(nfa):
+def nfa_to_dfa(_nfa):
     """Convert an NFA to a DFA using the subset construction algorithm with performance optimizations."""
     alphabet = set()
 
     # Collect all symbols in the NFA using BFS for better performance
-    queue = [nfa.start_state]
+    queue = [_nfa.start_state]
     visited = set()
     
     while queue:
@@ -324,7 +324,7 @@ def nfa_to_dfa(nfa):
                 queue.append(eps_state)
 
     # Start with epsilon closure of the start state
-    start_closure = frozenset(epsilon_closure(nfa.start_state))
+    start_closure = frozenset(epsilon_closure(_nfa.start_state))
 
     # Map NFA state sets to DFA states
     dfa_states = {start_closure: 0}  # Start state is 0
