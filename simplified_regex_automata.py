@@ -567,8 +567,8 @@ def create_dfa_animation_frames(dfa, input_string, max_frames=20):
     highlight_states = [states_visited[0]]
     highlight_transitions = []
     title = "Initial State"
-    fig = visualize_dfa(dfa, highlight_states, highlight_transitions, title)
-    frames.append(fig)
+    img_str = visualize_dfa(dfa, highlight_states, highlight_transitions, title)
+    frames.append(img_str)
     
     # Add frames for each transition
     for i in range(1, min(len(states_visited), max_frames)):
@@ -580,8 +580,8 @@ def create_dfa_animation_frames(dfa, input_string, max_frames=20):
         else:
             title = "Final State"
         
-        fig = visualize_dfa(dfa, highlight_states, highlight_transitions, title)
-        frames.append(fig)
+        img_str = visualize_dfa(dfa, highlight_states, highlight_transitions, title)
+        frames.append(img_str)
     
     # Add final state frame if not already included
     if len(states_visited) > max_frames:
@@ -589,8 +589,8 @@ def create_dfa_animation_frames(dfa, input_string, max_frames=20):
         highlight_transitions = []
         result = "Accepted" if is_accepted else "Rejected"
         title = f"Final State - String {result}"
-        fig = visualize_dfa(dfa, highlight_states, highlight_transitions, title)
-        frames.append(fig)
+        img_str = visualize_dfa(dfa, highlight_states, highlight_transitions, title)
+        frames.append(img_str)
     
     return frames, is_accepted
 
