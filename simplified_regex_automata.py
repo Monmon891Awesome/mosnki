@@ -253,7 +253,7 @@ def regex_to_nfa(regex):
     return nfa
 
 @st.cache_data(ttl=600)
-def nfa_to_dfa(nfa):
+def nfa_to_dfa(_nfa):
     """Optimized NFA to DFA conversion using subset construction algorithm."""
     
     # Create efficient maps for transitions
@@ -263,7 +263,7 @@ def nfa_to_dfa(nfa):
     alphabet = set()
     
     # Collect states and transitions
-    queue = [nfa.start_state]
+    queue = [_nfa.start_state]
     visited = set()
     
     while queue:
@@ -299,7 +299,7 @@ def nfa_to_dfa(nfa):
                     queue.append(eps_state)
     
     # Start with epsilon closure of the start state
-    start_closure = epsilon_closure(nfa.start_state.state_id, epsilon_map)
+    start_closure = epsilon_closure(_nfa.start_state.state_id, epsilon_map)
     
     # Map NFA state ID sets to DFA states
     dfa_states = {start_closure: 0}  # Start state is 0
