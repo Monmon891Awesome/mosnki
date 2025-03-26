@@ -462,7 +462,7 @@ def get_all_automata_from_regex(regex):
 # ======== VISUALIZATION FUNCTIONS ========
 @st.cache_data(ttl=600)
 def visualize_dfa(dfa, highlight_states=None, highlight_transitions=None, title=None):
-    """Visualize a DFA using networkx and matplotlib."""
+    """Visualize a DFA using networkx and matplotlib and return a base64-encoded image."""
     # Create a directed graph
     G = nx.DiGraph()
     
@@ -547,7 +547,14 @@ def visualize_dfa(dfa, highlight_states=None, highlight_transitions=None, title=
     # Adjust margins
     plt.tight_layout()
     
-    return plt
+    # Convert the figure to a base64-encoded image
+    buf = BytesIO()
+    plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+    buf.seek(0)
+    img_str = base64.b64encode(buf.read()).decode()
+    plt.close()
+    
+    return img_str
 
 def create_dfa_animation_frames(dfa, input_string, max_frames=20):
     """Create static frames for a DFA simulation animation."""
@@ -937,5 +944,5 @@ def main():
     render_footer()
 
 # ======== APP ENTRY POINT ========
-if __name__ == "__main__":
+if __name__ "__main__":
     main()
