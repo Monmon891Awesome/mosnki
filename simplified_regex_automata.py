@@ -944,5 +944,5 @@ def main():
     render_footer()
 
 # ======== APP ENTRY POINT ========
-if __name__ "__main__":
+if __name__ == "__main__":
     main()
