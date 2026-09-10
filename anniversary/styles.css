@@ -25,6 +25,8 @@
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --tap-min: 44px;
+  /* Rail sits 14px from the right and is --tap-min wide; content clears it. */
+  --rail-gutter: 66px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -48,7 +50,9 @@ body {
 }
 
 /* ── Progress rail ──
-   Thumb-reachable, right edge, minimal — the only nav control (Hick's Law). */
+   Thumb-reachable, right edge, minimal — the only nav control (Hick's Law).
+   It's fixed above the content, so every scrolling section reserves
+   --rail-gutter on its right edge to keep text from running underneath it. */
 .progress-rail {
   position: fixed;
   right: 14px;
@@ -81,6 +85,14 @@ body {
 .progress-rail button[aria-current="true"] span {
   background: var(--ink);
   transform: scale(1.6);
+}
+
+/* The locked finale is the one dark section — ink dots would vanish on it. */
+.progress-rail.on-dark button span {
+  background: rgba(250, 248, 244, 0.32);
+}
+.progress-rail.on-dark button[aria-current="true"] span {
+  background: var(--ivory);
 }
 
 /* ── Cover ── */
@@ -135,7 +147,7 @@ body {
   flex-direction: column;
   justify-content: center;
   gap: 24px;
-  padding: 64px 28px;
+  padding: 64px var(--rail-gutter) 64px 28px;
   opacity: 0;
   transform: translateY(24px);
   transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out);
@@ -181,6 +193,14 @@ body {
   background: var(--ivory-dim);
 }
 
+/* A photo file that isn't there yet: a quiet dashed slot, not a broken icon. */
+img.is-missing {
+  object-fit: contain;
+  border: 1px dashed var(--hairline);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
 /* Subtle per-chapter accent wash, not a loud CTA color (see PRD §2.1) */
 .chapter[data-accent="clay"]     { --chapter-accent: var(--accent-clay); }
 .chapter[data-accent="fig"]      { --chapter-accent: var(--accent-fig); }
@@ -200,7 +220,7 @@ body {
   justify-content: center;
   text-align: center;
   gap: 20px;
-  padding: 48px 28px;
+  padding: 48px var(--rail-gutter) 48px 28px;
   background: var(--ink);
   color: var(--ivory);
 }
@@ -243,7 +263,18 @@ body {
   color: rgba(250, 248, 244, 0.55);
 }
 
-/* ── Finale: unlocked letter state ── */
+/* ── Finale: unlocked letter state ──
+   The finale holds two mutually exclusive states; CSS owns the switching so
+   app.js only has to toggle .is-unlocked. */
+#finale-unlocked { display: none; }
+.finale.is-unlocked #finale-locked { display: none; }
+.finale.is-unlocked #finale-unlocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
 .finale.is-unlocked {
   background: var(--ivory);
   color: var(--ink);

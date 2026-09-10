@@ -134,7 +134,7 @@ Given no backend, the lowest-friction approach that still lets Monskie add photo
 - Photos are responsibility of Monskie to source at reasonable resolution (2000px longest edge recommended); build step generates responsive sizes (see §7.3).
 
 ### 6.4 Time-Lock / Countdown
-- Final chapter is locked until **2026-09-22T19:00:00** in **Camille's local device time** by default (simplest, matches "surprise opens when it's evening for her" intent) — flagged as an open question in §9 since a fixed timezone (e.g., Philippines time) may be more correct if they're not in the same timezone.
+- **RESOLVED (was §9 Q1):** Final chapter is locked until **`2026-09-22T19:00:00+08:00`** — 7:00 PM **Manila time (PHT, UTC+8)**, pinned with an explicit offset so it resolves to the same absolute instant (11:00 UTC) for every viewer regardless of device timezone. The Philippines does not observe DST, so a fixed offset is correct year-round.
 - Countdown shows days/hours/minutes live.
 - On unlock: one-time animated "seal breaks" sequence, then reveals the letter + closing photo + celebration effect.
 - Unlock state persisted in `localStorage` so a revisit after the date doesn't replay the countdown.
@@ -167,8 +167,11 @@ Given no backend, the lowest-friction approach that still lets Monskie add photo
 - Animations restricted to GPU-friendly properties (`transform`, `opacity`).
 - Total initial payload budget: keep first-chapter-visible load lean (target <1.5MB before any below-fold photos load) given this will likely be opened on mobile data.
 
-### 7.4 Timezone Edge Case
-- Flagged as open question (§9): "7:00 PM" needs a defined reference — device-local time is simplest to implement but could unlock "early" or "late" for Camille depending on where she is relative to Monskie when it's opened.
+### 7.4 Timezone Handling — RESOLVED
+- The unlock is pinned to **Manila time (UTC+8)** via an explicit `+08:00` offset in `chapters.json`, so it fires at one absolute instant worldwide rather than drifting with the viewer's device timezone.
+- Two guards in `app.js` protect this:
+  - a console warning if `unlockAt` ever loses its offset (which would silently regress to device-local time);
+  - **fails closed** — an unparseable date keeps the finale locked and skips the countdown timer rather than risking an early reveal or rendering `NaN`.
 
 ### 7.5 Hosting
 - Stays on GitHub Pages (matches current repo setup, zero hosting cost, already configured per prior conversation) — static site, no server required, consistent with the no-backend constraint in §4.2.
@@ -186,7 +189,7 @@ Given no backend, the lowest-friction approach that still lets Monskie add photo
 
 ## 9. Open Questions
 
-1. **Timezone reference for the 7:00 PM unlock** — device-local vs. a fixed timezone? Needs Monskie's input based on where Camille will most likely be that evening.
+1. ~~**Timezone reference for the 7:00 PM unlock**~~ — **RESOLVED:** Manila time, UTC+8. Implemented as `2026-09-22T19:00:00+08:00`. See §6.4 and §7.4.
 2. **Number of chapters / photos** — need the actual content (dates, milestone list, photo set) from Monskie before final IA can be locked.
 3. **Editor mode (§6.3 Option B)** — worth building, or is manual JSON editing by Monskie acceptable long-term?
 4. **Does the original Valentine's page (`index.html`) stay live/linked**, or does this new storybook replace it as the repo's primary page?

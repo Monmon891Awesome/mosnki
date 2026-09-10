@@ -2,6 +2,11 @@
   "use strict";
 
   const STORAGE_KEY = "anniversary-storybook:unlocked";
+  // Photo paths in chapters.json are written relative to that file (e.g.
+  // "photos/first-date.jpg"), but the browser would resolve them against the
+  // page instead. Resolve them against the content directory so authoring in
+  // chapters.json stays simple.
+  const CONTENT_BASE = "content/";
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const els = {
@@ -48,7 +53,10 @@
     section.dataset.accent = chapter.accent || "";
 
     const photosHtml = (chapter.photos || [])
-      .map((p) => `<img src="${escapeAttr(p.src)}" alt="${escapeAttr(p.alt || "")}" loading="lazy" />`)
+      .map(
+        (p) =>
+          `<img src="${escapeAttr(resolvePhoto(p.src))}" alt="${escapeAttr(p.alt || "")}" loading="lazy" />`
+      )
       .join("");
 
     section.innerHTML = `
@@ -57,6 +65,8 @@
       <p class="chapter-body">${escapeHtml(chapter.body || "")}</p>
       ${photosHtml ? `<div class="chapter-photos">${photosHtml}</div>` : ""}
     `;
+
+    section.querySelectorAll("img").forEach(markMissingOnError);
 
     els.chapters.appendChild(section);
     sections.push({ id: chapter.id, el: section });
@@ -90,6 +100,8 @@
         if (entry.isIntersecting) {
           entry.target.classList.add("is-visible");
           updateRail(entry.target.id);
+          // Scrolling back up off the dark finale returns the rail to ink.
+          els.rail.classList.remove("on-dark");
         }
       });
     },
@@ -98,6 +110,19 @@
   sections.forEach(({ el }) => {
     if (el.classList.contains("chapter")) observer.observe(el);
   });
+
+  // The finale isn't a .chapter, so it needs its own watcher — both to mark its
+  // rail dot current and to flip the rail to light dots while it's still dark.
+  new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        updateRail("finale");
+        els.rail.classList.toggle("on-dark", els.finale.dataset.unlocked !== "true");
+      });
+    },
+    { threshold: 0.5 }
+  ).observe(els.finale);
 
   els.beginBtn.addEventListener("click", () => {
     const first = sections[0];
@@ -120,7 +145,23 @@
   }
 
   // ── Finale: countdown / unlock ──
+  // unlockAt MUST carry an explicit UTC offset (e.g. "+08:00" for Manila).
+  // A bare "2026-09-22T19:00:00" is parsed as the *viewer's* local time, so it
+  // would fire at the wrong moment for anyone outside that timezone.
+  if (!/(Z|[+-]\d{2}:\d{2})$/.test(data.unlockAt || "")) {
+    console.warn(
+      "unlockAt has no UTC offset, so it resolves to each viewer's own timezone. " +
+        'Pin it to one timezone, e.g. "2026-09-22T19:00:00+08:00".'
+    );
+  }
+
   const unlockAt = new Date(data.unlockAt).getTime();
+  const unlockIsValid = !Number.isNaN(unlockAt);
+  if (!unlockIsValid) {
+    // Fail closed: an unreadable date must never reveal the letter early.
+    console.error("unlockAt is not a valid date, keeping the finale locked:", data.unlockAt);
+  }
+
   els.finaleLockedHeadline.textContent = data.finale.lockedHeadline;
   els.finaleLockedSub.textContent = data.finale.lockedSubline;
 
@@ -147,14 +188,13 @@
   function unlockFinale() {
     clearInterval(countdownTimer);
     els.finale.dataset.unlocked = "true";
+    // CSS owns which of the two finale states is visible (see styles.css).
     els.finale.classList.add("is-unlocked");
-    els.finaleLocked.style.display = "none";
-    els.finaleUnlocked.style.display = "flex";
-    els.finaleUnlocked.style.flexDirection = "column";
-    els.finaleUnlocked.style.alignItems = "center";
-    els.finaleUnlocked.style.gap = "20px";
+    // The unlocked finale is ivory, so the rail goes back to ink dots.
+    els.rail.classList.remove("on-dark");
 
-    els.letterPhoto.src = data.finale.photo?.src || "";
+    markMissingOnError(els.letterPhoto);
+    els.letterPhoto.src = resolvePhoto(data.finale.photo?.src);
     els.letterPhoto.alt = data.finale.photo?.alt || "";
     els.letterTitle.textContent = data.finale.letterTitle;
     els.letterBody.textContent = data.finale.letterBody;
@@ -168,7 +208,9 @@
   }
 
   let countdownTimer;
-  if (Date.now() >= unlockAt) {
+  if (!unlockIsValid) {
+    // Stay locked, and don't run a timer that would render NaN.
+  } else if (Date.now() >= unlockAt) {
     unlockFinale();
   } else {
     renderCountdown();
@@ -228,6 +270,19 @@
   }
 
   // ── Utilities ──
+  function resolvePhoto(src) {
+    if (!src) return "";
+    // Leave absolute URLs and root-relative paths alone.
+    if (/^(https?:)?\/\//.test(src) || src.startsWith("/")) return src;
+    return CONTENT_BASE + src;
+  }
+
+  // A photo that hasn't been added yet should read as a quiet empty slot,
+  // not a broken-image icon.
+  function markMissingOnError(img) {
+    img.addEventListener("error", () => img.classList.add("is-missing"), { once: true });
+  }
+
   function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;

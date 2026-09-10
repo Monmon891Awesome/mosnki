@@ -1,7 +1,9 @@
 {
   "recipient": "Camille",
   "author": "Monskie",
-  "unlockAt": "2026-09-22T19:00:00",
+  "_unlockAtNote": "Fixed Manila time (PHT, UTC+8). The +08:00 offset makes this an absolute instant, so it unlocks at 7:00 PM Manila for every viewer regardless of their device timezone. The Philippines does not observe DST, so a fixed offset is safe year-round.",
+  "unlockAt": "2026-09-22T19:00:00+08:00",
+  "unlockLabel": "7:00 PM, 22 September 2026 · Manila",
   "chapters": [
     {
       "id": "how-we-met",
@@ -11,7 +13,7 @@
       "body": "Replace this with the story of how you two met. Two or three sentences read best on a phone screen — keep it short, let the photo carry the rest.",
       "accent": "clay",
       "photos": [
-        { "src": "photos/placeholder-1.jpg", "alt": "Describe this photo" }
+        { "src": "photos/placeholder-how-we-met.svg", "alt": "Placeholder — replace with a photo from when you met" }
       ]
     },
     {
@@ -22,7 +24,7 @@
       "body": "Replace with a memory from your first date. What did you notice about her? What made you nervous?",
       "accent": "fig",
       "photos": [
-        { "src": "photos/placeholder-2.jpg", "alt": "Describe this photo" }
+        { "src": "photos/placeholder-first-date.svg", "alt": "Placeholder — replace with a photo from your first date" }
       ]
     },
     {
@@ -33,7 +35,7 @@
       "body": "Replace with the moment you two became a couple.",
       "accent": "sky",
       "photos": [
-        { "src": "photos/placeholder-3.jpg", "alt": "Describe this photo" }
+        { "src": "photos/placeholder-made-it-official.svg", "alt": "Placeholder — replace with a photo from when you became official" }
       ]
     },
     {
@@ -44,7 +46,7 @@
       "body": "Optional chapter — delete this entry if it doesn't apply yet. Replace with the story of meeting each other's family/friends for the first time, and how it went.",
       "accent": "olive",
       "photos": [
-        { "src": "photos/placeholder-family.jpg", "alt": "Describe this photo" }
+        { "src": "photos/placeholder-meeting-the-family.svg", "alt": "Placeholder — replace with a photo with family or friends" }
       ]
     },
     {
@@ -55,8 +57,8 @@
       "body": "Replace with a memory from a trip, a small outing, anything that stuck with you both.",
       "accent": "cactus",
       "photos": [
-        { "src": "photos/placeholder-4.jpg", "alt": "Describe this photo" },
-        { "src": "photos/placeholder-5.jpg", "alt": "Describe this photo" }
+        { "src": "photos/placeholder-a-favorite-trip-1.svg", "alt": "Placeholder — replace with a photo from the trip" },
+        { "src": "photos/placeholder-a-favorite-trip-2.svg", "alt": "Placeholder — replace with a second photo from the trip" }
       ]
     },
     {
@@ -67,7 +69,7 @@
       "body": "Optional chapter — delete this entry if it doesn't feel right. Replace with a hard moment you two got through together, and what it showed you about each other. This one can carry more weight than the others; it's okay if it's shorter or heavier in tone.",
       "accent": "dust",
       "photos": [
-        { "src": "photos/placeholder-hard.jpg", "alt": "Describe this photo" }
+        { "src": "photos/placeholder-through-something-hard.svg", "alt": "Placeholder — replace with a photo, or remove this chapter" }
       ]
     },
     {
@@ -78,7 +80,7 @@
       "body": "Replace with the story behind a running joke only the two of you get.",
       "accent": "heather",
       "photos": [
-        { "src": "photos/placeholder-6.jpg", "alt": "Describe this photo" }
+        { "src": "photos/placeholder-an-inside-joke.svg", "alt": "Placeholder — replace with a photo tied to the joke" }
       ]
     },
     {
@@ -89,7 +91,7 @@
       "body": "Optional chapter — a small, unremarkable, ordinary day that you remember anyway. Not a milestone, just a moment. These often mean the most; keep this one short.",
       "accent": "kraft",
       "photos": [
-        { "src": "photos/placeholder-ordinary.jpg", "alt": "Describe this photo" }
+        { "src": "photos/placeholder-a-random-tuesday.svg", "alt": "Placeholder — replace with an everyday photo" }
       ]
     }
   ],
@@ -98,8 +100,8 @@
     "lockedHeadline": "One more chapter is still being written.",
     "lockedSubline": "It unlocks on your anniversary.",
     "letterTitle": "Happy Anniversary, Camille",
-    "letterBody": "Replace this with your anniversary letter to Camille — this is the emotional peak of the whole story, so take your time writing it. It can be as long as you want; it's the one chapter where more text is fine.",
+    "letterBody": "Replace this with your anniversary letter to Camille — this is the emotional peak of the whole story, so take your time writing it.\n\nBlank lines become paragraph breaks, so you can write as many paragraphs as you want. It can be as long as you like; this is the one chapter where more text is fine.",
     "signature": "Forever yours, Monskie",
-    "photo": { "src": "photos/placeholder-finale.jpg", "alt": "Describe this photo" }
+    "photo": { "src": "photos/placeholder-finale.svg", "alt": "Placeholder — replace with a recent photo of you two" }
   }
 }
