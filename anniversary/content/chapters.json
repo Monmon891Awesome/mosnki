@@ -1,0 +1,67 @@
+{
+  "recipient": "Camille",
+  "author": "Monskie",
+  "unlockAt": "2026-09-22T19:00:00",
+  "chapters": [
+    {
+      "id": "how-we-met",
+      "date": "PLACEHOLDER — e.g. \"March 2024\"",
+      "title": "How We Met",
+      "body": "Replace this with the story of how you two met. Two or three sentences read best on a phone screen — keep it short, let the photo carry the rest.",
+      "accent": "clay",
+      "photos": [
+        { "src": "photos/placeholder-1.jpg", "alt": "Describe this photo" }
+      ]
+    },
+    {
+      "id": "first-date",
+      "date": "PLACEHOLDER",
+      "title": "The First Date",
+      "body": "Replace with a memory from your first date. What did you notice about her? What made you nervous?",
+      "accent": "fig",
+      "photos": [
+        { "src": "photos/placeholder-2.jpg", "alt": "Describe this photo" }
+      ]
+    },
+    {
+      "id": "made-it-official",
+      "date": "PLACEHOLDER",
+      "title": "Made It Official",
+      "body": "Replace with the moment you two became a couple.",
+      "accent": "sky",
+      "photos": [
+        { "src": "photos/placeholder-3.jpg", "alt": "Describe this photo" }
+      ]
+    },
+    {
+      "id": "a-favorite-trip",
+      "date": "PLACEHOLDER",
+      "title": "A Favorite Trip",
+      "body": "Replace with a memory from a trip, a small outing, anything that stuck with you both.",
+      "accent": "cactus",
+      "photos": [
+        { "src": "photos/placeholder-4.jpg", "alt": "Describe this photo" },
+        { "src": "photos/placeholder-5.jpg", "alt": "Describe this photo" }
+      ]
+    },
+    {
+      "id": "an-inside-joke",
+      "date": "PLACEHOLDER",
+      "title": "The Inside Joke",
+      "body": "Replace with the story behind a running joke only the two of you get.",
+      "accent": "heather",
+      "photos": [
+        { "src": "photos/placeholder-6.jpg", "alt": "Describe this photo" }
+      ]
+    }
+  ],
+  "finale": {
+    "title": "Today",
+    "lockedHeadline": "One more chapter is still being written.",
+    "lockedSubline": "It unlocks on your anniversary.",
+    "letterTitle": "Happy Anniversary, Camille",
+    "letterBody": "Replace this with your anniversary letter to Camille — this is the emotional peak of the whole story, so take your time writing it. It can be as long as you want; it's the one chapter where more text is fine.",
+    "signature": "Forever yours, Monskie",
+    "photo": { "src": "photos/placeholder-finale.jpg", "alt": "Describe this photo" }
+  }
+}

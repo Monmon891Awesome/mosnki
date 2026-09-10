@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Our Story</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient" id="ambient" aria-hidden="true"></div>
+
+  <nav class="progress-rail" id="progress-rail" aria-label="Chapter progress"></nav>
+
+  <main class="frame" id="frame">
+    <section class="cover" id="cover">
+      <p class="cover-eyebrow">A story for</p>
+      <h1 class="cover-title" id="cover-name">—</h1>
+      <p class="cover-sub">Every chapter, so far.</p>
+      <button class="cover-cta" id="begin-btn" type="button">Begin</button>
+    </section>
+
+    <div id="chapters"></div>
+
+    <section class="finale" id="finale" data-unlocked="false">
+      <div id="finale-locked">
+        <div class="finale-seal" aria-hidden="true">✦</div>
+        <h2 class="finale-locked-headline" id="finale-locked-headline"></h2>
+        <p class="finale-locked-sub" id="finale-locked-sub"></p>
+        <div class="countdown" id="countdown" aria-live="polite">
+          <div class="countdown-unit"><strong id="cd-days">0</strong><span>days</span></div>
+          <div class="countdown-unit"><strong id="cd-hours">0</strong><span>hrs</span></div>
+          <div class="countdown-unit"><strong id="cd-mins">0</strong><span>min</span></div>
+          <div class="countdown-unit"><strong id="cd-secs">0</strong><span>sec</span></div>
+        </div>
+      </div>
+
+      <div id="finale-unlocked" style="display:none;">
+        <img class="letter-photo" id="letter-photo" alt="" />
+        <h2 class="letter-title" id="letter-title"></h2>
+        <p class="letter-body" id="letter-body"></p>
+        <p class="letter-signature" id="letter-signature"></p>
+      </div>
+    </section>
+  </main>
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <script src="app.js"></script>
+</body>
+</html>

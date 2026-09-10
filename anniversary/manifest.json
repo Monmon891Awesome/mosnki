@@ -1,0 +1,9 @@
+{
+  "name": "Our Story",
+  "short_name": "Our Story",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#faf8f4",
+  "theme_color": "#faf8f4",
+  "icons": []
+}
