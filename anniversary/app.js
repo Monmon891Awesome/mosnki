@@ -272,8 +272,8 @@
   // ── Utilities ──
   function resolvePhoto(src) {
     if (!src) return "";
-    // Leave absolute URLs and root-relative paths alone.
-    if (/^(https?:)?\/\//.test(src) || src.startsWith("/")) return src;
+    // Leave absolute URLs, root-relative paths, and inlined data URIs alone.
+    if (/^(https?:)?\/\//.test(src) || src.startsWith("/") || src.startsWith("data:")) return src;
     return CONTENT_BASE + src;
   }
 
