@@ -9,14 +9,16 @@
   --ivory-dim: #f1ede4;
   --hairline: rgba(23, 22, 26, 0.12);
 
-  --accent-clay: #b5654a;
+  /* Accents are used for small uppercase date labels on ivory, so each is
+     tuned to clear WCAG AA (4.5:1) at 13px rather than picked purely by eye. */
+  --accent-clay: #a85e45;
   --accent-fig: #6c4a63;
   --accent-sky: #4c6b7a;
   --accent-cactus: #5c7a52;
   --accent-heather: #7a6a8a;
-  --accent-olive: #7d7a45;
-  --accent-dust: #9c6b6b;
-  --accent-kraft: #9a7b52;
+  --accent-olive: #767441;
+  --accent-dust: #976565;
+  --accent-kraft: #896e49;
 
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
