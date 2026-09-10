@@ -175,22 +175,33 @@ body {
   max-width: 46ch;
 }
 
-.chapter-photos {
+.chapter-media {
   display: flex;
   gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   padding-bottom: 4px;
   -webkit-overflow-scrolling: touch;
+  align-items: flex-start;
 }
-.chapter-photos img {
+.chapter-media img,
+.chapter-media video {
   scroll-snap-align: center;
   width: 100%;
   flex: 0 0 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
   border-radius: 4px;
   background: var(--ivory-dim);
+}
+.chapter-media img {
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+/* Videos keep their own aspect ratio — cropping a clip to 4:5 would cut
+   people out of frame, and phone video is usually 9:16 or 16:9. */
+.chapter-media video {
+  height: auto;
+  max-height: 78vh;
+  background: var(--ink);
 }
 
 /* A photo file that isn't there yet: a quiet dashed slot, not a broken icon. */
@@ -279,13 +290,24 @@ img.is-missing {
   background: var(--ivory);
   color: var(--ink);
 }
-.letter-photo {
+.letter-media {
   width: 100%;
   max-width: 320px;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
+}
+.letter-media img,
+.letter-media video {
+  width: 100%;
   border-radius: 4px;
   background: var(--ivory-dim);
+}
+.letter-media img {
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+.letter-media video {
+  height: auto;
+  max-height: 70vh;
+  background: var(--ink);
 }
 .letter-title {
   font-family: var(--serif);

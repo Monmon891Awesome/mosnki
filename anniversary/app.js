@@ -7,6 +7,9 @@
   // page instead. Resolve them against the content directory so authoring in
   // chapters.json stays simple.
   const CONTENT_BASE = "content/";
+  // Declared up here, not beside isVideo() below: the chapter loop runs before
+  // that point, and a const referenced before its declaration throws.
+  const VIDEO_EXT = /\.(mp4|mov|m4v|webm|ogv)(\?.*)?$/i;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const els = {
@@ -20,7 +23,7 @@
     finaleUnlocked: document.getElementById("finale-unlocked"),
     finaleLockedHeadline: document.getElementById("finale-locked-headline"),
     finaleLockedSub: document.getElementById("finale-locked-sub"),
-    letterPhoto: document.getElementById("letter-photo"),
+    letterMedia: document.getElementById("letter-media"),
     letterTitle: document.getElementById("letter-title"),
     letterBody: document.getElementById("letter-body"),
     letterSignature: document.getElementById("letter-signature"),
@@ -52,21 +55,16 @@
     section.id = chapter.id;
     section.dataset.accent = chapter.accent || "";
 
-    const photosHtml = (chapter.photos || [])
-      .map(
-        (p) =>
-          `<img src="${escapeAttr(resolvePhoto(p.src))}" alt="${escapeAttr(p.alt || "")}" loading="lazy" />`
-      )
-      .join("");
+    const mediaHtml = (chapter.media || []).map(mediaTag).join("");
 
     section.innerHTML = `
       <p class="chapter-date">${escapeHtml(chapter.date || "")}</p>
       <h2 class="chapter-title">${escapeHtml(chapter.title || "")}</h2>
       <p class="chapter-body">${escapeHtml(chapter.body || "")}</p>
-      ${photosHtml ? `<div class="chapter-photos">${photosHtml}</div>` : ""}
+      ${mediaHtml ? `<div class="chapter-media">${mediaHtml}</div>` : ""}
     `;
 
-    section.querySelectorAll("img").forEach(markMissingOnError);
+    section.querySelectorAll("img, video").forEach(markMissingOnError);
 
     els.chapters.appendChild(section);
     sections.push({ id: chapter.id, el: section });
@@ -193,9 +191,10 @@
     // The unlocked finale is ivory, so the rail goes back to ink dots.
     els.rail.classList.remove("on-dark");
 
-    markMissingOnError(els.letterPhoto);
-    els.letterPhoto.src = resolvePhoto(data.finale.photo?.src);
-    els.letterPhoto.alt = data.finale.photo?.alt || "";
+    if (data.finale.media?.src) {
+      els.letterMedia.innerHTML = mediaTag(data.finale.media);
+      els.letterMedia.querySelectorAll("img, video").forEach(markMissingOnError);
+    }
     els.letterTitle.textContent = data.finale.letterTitle;
     els.letterBody.textContent = data.finale.letterBody;
     els.letterSignature.textContent = data.finale.signature;
@@ -267,6 +266,29 @@
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }, { once: true });
+  }
+
+  // ── Media ──
+  // A chapter's media[] holds photos and videos in one list; the file
+  // extension decides which element to render, so authoring chapters.json
+  // never has to state the type.
+  function isVideo(src) {
+    return VIDEO_EXT.test(src || "");
+  }
+
+  function mediaTag(item) {
+    const src = escapeAttr(resolvePhoto(item.src));
+    const label = escapeAttr(item.alt || "");
+    if (!isVideo(item.src)) {
+      return `<img src="${src}" alt="${label}" loading="lazy" />`;
+    }
+    // playsinline keeps iOS from hijacking the page into its fullscreen player;
+    // preload="metadata" avoids pulling whole clips over mobile data on load.
+    const poster = item.poster ? ` poster="${escapeAttr(resolvePhoto(item.poster))}"` : "";
+    return (
+      `<video src="${src}" aria-label="${label}"${poster} ` +
+      `controls playsinline preload="metadata"></video>`
+    );
   }
 
   // ── Utilities ──

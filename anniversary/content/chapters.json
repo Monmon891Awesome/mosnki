@@ -12,8 +12,11 @@
       "title": "How We Met",
       "body": "Replace this with the story of how you two met. Two or three sentences read best on a phone screen — keep it short, let the photo carry the rest.",
       "accent": "clay",
-      "photos": [
-        { "src": "photos/placeholder-how-we-met.svg", "alt": "Placeholder — replace with a photo from when you met" }
+      "media": [
+        {
+          "src": "photos/placeholder-how-we-met.svg",
+          "alt": "Placeholder — replace with a photo from when you met"
+        }
       ]
     },
     {
@@ -23,8 +26,11 @@
       "title": "The First Date",
       "body": "Replace with a memory from your first date. What did you notice about her? What made you nervous?",
       "accent": "fig",
-      "photos": [
-        { "src": "photos/placeholder-first-date.svg", "alt": "Placeholder — replace with a photo from your first date" }
+      "media": [
+        {
+          "src": "photos/placeholder-first-date.svg",
+          "alt": "Placeholder — replace with a photo from your first date"
+        }
       ]
     },
     {
@@ -34,8 +40,11 @@
       "title": "Made It Official",
       "body": "Replace with the moment you two became a couple.",
       "accent": "sky",
-      "photos": [
-        { "src": "photos/placeholder-made-it-official.svg", "alt": "Placeholder — replace with a photo from when you became official" }
+      "media": [
+        {
+          "src": "photos/placeholder-made-it-official.svg",
+          "alt": "Placeholder — replace with a photo from when you became official"
+        }
       ]
     },
     {
@@ -45,8 +54,11 @@
       "title": "Meeting the Family",
       "body": "Optional chapter — delete this entry if it doesn't apply yet. Replace with the story of meeting each other's family/friends for the first time, and how it went.",
       "accent": "olive",
-      "photos": [
-        { "src": "photos/placeholder-meeting-the-family.svg", "alt": "Placeholder — replace with a photo with family or friends" }
+      "media": [
+        {
+          "src": "photos/placeholder-meeting-the-family.svg",
+          "alt": "Placeholder — replace with a photo with family or friends"
+        }
       ]
     },
     {
@@ -56,9 +68,15 @@
       "title": "A Favorite Trip",
       "body": "Replace with a memory from a trip, a small outing, anything that stuck with you both.",
       "accent": "cactus",
-      "photos": [
-        { "src": "photos/placeholder-a-favorite-trip-1.svg", "alt": "Placeholder — replace with a photo from the trip" },
-        { "src": "photos/placeholder-a-favorite-trip-2.svg", "alt": "Placeholder — replace with a second photo from the trip" }
+      "media": [
+        {
+          "src": "photos/placeholder-a-favorite-trip-1.svg",
+          "alt": "Placeholder — replace with a photo from the trip"
+        },
+        {
+          "src": "photos/placeholder-a-favorite-trip-2.svg",
+          "alt": "Placeholder — replace with a second photo from the trip"
+        }
       ]
     },
     {
@@ -68,8 +86,11 @@
       "title": "Getting Through It Together",
       "body": "Optional chapter — delete this entry if it doesn't feel right. Replace with a hard moment you two got through together, and what it showed you about each other. This one can carry more weight than the others; it's okay if it's shorter or heavier in tone.",
       "accent": "dust",
-      "photos": [
-        { "src": "photos/placeholder-through-something-hard.svg", "alt": "Placeholder — replace with a photo, or remove this chapter" }
+      "media": [
+        {
+          "src": "photos/placeholder-through-something-hard.svg",
+          "alt": "Placeholder — replace with a photo, or remove this chapter"
+        }
       ]
     },
     {
@@ -79,8 +100,11 @@
       "title": "The Inside Joke",
       "body": "Replace with the story behind a running joke only the two of you get.",
       "accent": "heather",
-      "photos": [
-        { "src": "photos/placeholder-an-inside-joke.svg", "alt": "Placeholder — replace with a photo tied to the joke" }
+      "media": [
+        {
+          "src": "photos/placeholder-an-inside-joke.svg",
+          "alt": "Placeholder — replace with a photo tied to the joke"
+        }
       ]
     },
     {
@@ -90,8 +114,11 @@
       "title": "A Random Tuesday",
       "body": "Optional chapter — a small, unremarkable, ordinary day that you remember anyway. Not a milestone, just a moment. These often mean the most; keep this one short.",
       "accent": "kraft",
-      "photos": [
-        { "src": "photos/placeholder-a-random-tuesday.svg", "alt": "Placeholder — replace with an everyday photo" }
+      "media": [
+        {
+          "src": "photos/placeholder-a-random-tuesday.svg",
+          "alt": "Placeholder — replace with an everyday photo"
+        }
       ]
     }
   ],
@@ -102,6 +129,10 @@
     "letterTitle": "Happy Anniversary, Camille",
     "letterBody": "Replace this with your anniversary letter to Camille — this is the emotional peak of the whole story, so take your time writing it.\n\nBlank lines become paragraph breaks, so you can write as many paragraphs as you want. It can be as long as you like; this is the one chapter where more text is fine.",
     "signature": "Forever yours, Monskie",
-    "photo": { "src": "photos/placeholder-finale.svg", "alt": "Placeholder — replace with a recent photo of you two" }
-  }
+    "media": {
+      "src": "photos/placeholder-finale.svg",
+      "alt": "Placeholder — replace with a recent photo of you two"
+    }
+  },
+  "_mediaNote": "Each chapter's media[] holds photos and videos together. The file extension decides how it renders (.mp4/.mov/.m4v/.webm/.ogv become video players). Paths are relative to content/, so they start with photos/."
 }
