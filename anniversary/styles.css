@@ -14,6 +14,9 @@
   --accent-sky: #4c6b7a;
   --accent-cactus: #5c7a52;
   --accent-heather: #7a6a8a;
+  --accent-olive: #7d7a45;
+  --accent-dust: #9c6b6b;
+  --accent-kraft: #9a7b52;
 
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -182,6 +185,9 @@ body {
 .chapter[data-accent="sky"]      { --chapter-accent: var(--accent-sky); }
 .chapter[data-accent="cactus"]   { --chapter-accent: var(--accent-cactus); }
 .chapter[data-accent="heather"]  { --chapter-accent: var(--accent-heather); }
+.chapter[data-accent="olive"]    { --chapter-accent: var(--accent-olive); }
+.chapter[data-accent="dust"]     { --chapter-accent: var(--accent-dust); }
+.chapter[data-accent="kraft"]    { --chapter-accent: var(--accent-kraft); }
 
 /* ── Finale: locked state (Von Restorff — intentionally breaks the rhythm) ── */
 .finale {

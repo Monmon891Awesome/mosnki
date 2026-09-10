@@ -5,6 +5,7 @@
   "chapters": [
     {
       "id": "how-we-met",
+      "optional": false,
       "date": "PLACEHOLDER — e.g. \"March 2024\"",
       "title": "How We Met",
       "body": "Replace this with the story of how you two met. Two or three sentences read best on a phone screen — keep it short, let the photo carry the rest.",
@@ -15,6 +16,7 @@
     },
     {
       "id": "first-date",
+      "optional": false,
       "date": "PLACEHOLDER",
       "title": "The First Date",
       "body": "Replace with a memory from your first date. What did you notice about her? What made you nervous?",
@@ -25,6 +27,7 @@
     },
     {
       "id": "made-it-official",
+      "optional": false,
       "date": "PLACEHOLDER",
       "title": "Made It Official",
       "body": "Replace with the moment you two became a couple.",
@@ -34,7 +37,19 @@
       ]
     },
     {
+      "id": "meeting-the-family",
+      "optional": true,
+      "date": "PLACEHOLDER",
+      "title": "Meeting the Family",
+      "body": "Optional chapter — delete this entry if it doesn't apply yet. Replace with the story of meeting each other's family/friends for the first time, and how it went.",
+      "accent": "olive",
+      "photos": [
+        { "src": "photos/placeholder-family.jpg", "alt": "Describe this photo" }
+      ]
+    },
+    {
       "id": "a-favorite-trip",
+      "optional": false,
       "date": "PLACEHOLDER",
       "title": "A Favorite Trip",
       "body": "Replace with a memory from a trip, a small outing, anything that stuck with you both.",
@@ -45,13 +60,36 @@
       ]
     },
     {
+      "id": "through-something-hard",
+      "optional": true,
+      "date": "PLACEHOLDER",
+      "title": "Getting Through It Together",
+      "body": "Optional chapter — delete this entry if it doesn't feel right. Replace with a hard moment you two got through together, and what it showed you about each other. This one can carry more weight than the others; it's okay if it's shorter or heavier in tone.",
+      "accent": "dust",
+      "photos": [
+        { "src": "photos/placeholder-hard.jpg", "alt": "Describe this photo" }
+      ]
+    },
+    {
       "id": "an-inside-joke",
+      "optional": false,
       "date": "PLACEHOLDER",
       "title": "The Inside Joke",
       "body": "Replace with the story behind a running joke only the two of you get.",
       "accent": "heather",
       "photos": [
         { "src": "photos/placeholder-6.jpg", "alt": "Describe this photo" }
+      ]
+    },
+    {
+      "id": "a-random-tuesday",
+      "optional": true,
+      "date": "PLACEHOLDER",
+      "title": "A Random Tuesday",
+      "body": "Optional chapter — a small, unremarkable, ordinary day that you remember anyway. Not a milestone, just a moment. These often mean the most; keep this one short.",
+      "accent": "kraft",
+      "photos": [
+        { "src": "photos/placeholder-ordinary.jpg", "alt": "Describe this photo" }
       ]
     }
   ],
